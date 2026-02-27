@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Clipla Demo</title>
+  <style>
+    :root{
+      --bg:#0b1220; --card:rgba(255,255,255,.05); --bd:rgba(255,255,255,.12);
+      --txt:#e6eefc; --muted:#9fb3d9; --ok:#7ee787; --btn:rgba(255,255,255,.1);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,Roboto}
+    .wrap{max-width:980px;margin:48px auto;padding:0 18px}
+    .card{background:var(--card);border:1px solid var(--bd);border-radius:18px;padding:26px;box-shadow:0 24px 60px rgba(0,0,0,.35)}
+    h1{margin:0 0 6px;font-size:44px}
+    .sub{margin:0 0 16px;color:var(--muted)}
+    .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:12px 0}
+    .pill{padding:6px 10px;border-radius:999px;border:1px solid rgba(126,231,135,.45);background:rgba(126,231,135,.15);color:var(--ok);font-size:12px}
+    input[type="file"],input[type="text"]{
+      background:rgba(255,255,255,.08);border:1px solid var(--bd);border-radius:12px;
+      padding:12px;color:var(--txt)
+    }
+    input[type="text"]{min-width:360px}
+    button{
+      background:var(--btn);border:1px solid var(--bd);border-radius:12px;
+      padding:12px 14px;color:var(--txt);cursor:pointer
+    }
+    button:disabled{opacity:.55;cursor:not-allowed}
+    .log{
+      margin-top:14px;padding:14px;border-radius:12px;background:rgba(0,0,0,.35);
+      border:1px solid var(--bd);font-family:ui-monospace,Menlo,Consolas;font-size:12px;white-space:pre-wrap
+    }
+    a{color:#9cc2ff}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Clipla</h1>
+      <p class="sub">Konuş, Clipla yapsın.</p>
+
+      <div class="row">
+        <span class="pill">MVP Demo</span>
+        <span class="pill">Token’lı erişim ✓</span>
+      </div>
+
+      <div class="row">
+        <input id="file" type="file" accept="video/*" />
+        <button id="btnUpload">1) Upload</button>
+        <span id="job" style="color:var(--muted)"></span>
+      </div>
+
+      <div class="row">
+        <input id="cmd" type="text" placeholder="Örn: 60 saniyelik hızlı shorts, hook + closing seç" />
+        <button id="btnRender" disabled>2) Auto-edit + Render</button>
+        <a id="download" href="#" style="display:none">3) MP4 indir</a>
+      </div>
+
+      <div id="log" class="log">Hazır. Video seç → Upload → Auto-edit + Render.</div>
+    </div>
+  </div>
+
+<script>
+  // --- Token ---
+  const params = new URLSearchParams(window.location.search);
+  const token = (params.get("token") || "").trim();
+
+  const elFile = document.getElementById("file");
+  const btnUpload = document.getElementById("btnUpload");
+  const btnRender = document.getElementById("btnRender");
+  const elJob = document.getElementById("job");
+  const elCmd = document.getElementById("cmd");
+  const elLog = document.getElementById("log");
+  const elDl = document.getElementById("download");
+
+  let jobId = null;
+
+  function log(t){ elLog.textContent = t; }
+
+  async function api(url, opts){
+    const u = new URL(url, window.location.origin);
+    if(token) u.searchParams.set("token", token);
+    const res = await fetch(u.toString(), opts);
+    const text = await res.text();
+    let data=null; try{ data=JSON.parse(text);}catch(e){}
+    if(!res.ok) throw new Error(data?.detail || text || res.status);
+    return data;
+  }
+
+  if(!token){
+    log("Token yok. Demo linki geçersiz.");
+    btnUpload.disabled = true;
+  }
+
+  btnUpload.onclick = async ()=>{
+    try{
+      if(!elFile.files[0]){ log("Önce video seç."); return; }
+      btnUpload.disabled = true;
+      log("Upload başlıyor…");
+      const fd = new FormData();
+      fd.append("file", elFile.files[0]);
+      const data = await api("/api/video/upload", {method:"POST", body:fd});
+      jobId = data.job_id;
+      elJob.textContent = `job_id: ${jobId}`;
+      btnRender.disabled = false;
+      log("Upload OK ✓  Auto-edit + Render’a bas.");
+    }catch(e){
+      log("Upload hata ✗\n"+e.message);
+    }finally{
+      btnUpload.disabled = false;
+    }
+  };
+
+  btnRender.onclick = async ()=>{
+    try{
+      if(!jobId){ log("Önce Upload."); return; }
+      btnRender.disabled = true;
+      elDl.style.display="none";
+      log("Auto-edit + Render çalışıyor… (MP4 üretiliyor)");
+      const payload = {
+        command_text: elCmd.value || "60 saniyelik kısa bir edit yap, hook + closing seç",
+        platform: "shorts",
+        target_duration_sec: null
+      };
+      const data = await api(`/api/auto-edit/${jobId}`, {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify(payload)
+      });
+      elDl.href = data.download_url;
+      elDl.textContent = "3) MP4 indir";
+      elDl.style.display = "inline";
+      log(
+        "Render OK ✓\n" +
+        `score: ${data.algorithm_score}\n` +
+        `download: ${data.download_url}\n\n` +
+        (data.transcript_preview ? ("Transcript:\n"+data.transcript_preview) : "")
+      );
+    }catch(e){
+      log("Render hata ✗\n"+e.message);
+    }finally{
+      btnRender.disabled = false;
+    }
+  };
+</script>
+</body>
+</html>

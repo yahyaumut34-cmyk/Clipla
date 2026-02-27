@@ -1,0 +1,423 @@
+{
+  "model": "small",
+  "language": "tr",
+  "duration": 318.2526875,
+  "text": "hadi sür aynen videonu al diyorum videonu çekiyorum bilmem nereye atacağımı göreceğiz artık sür sür sür çok çabuk bırakıyorsun ama isteseydin toparlayabilirdin devam et devam devam devam devam kapıdan çıkacağız sağa döneceğiz neden? çünkü neden olmasın düz git düz düz nereye gidiyorsun arkamdan geliyorum bir sikleti de ne fena amuş sağdan kaldırımdan gidebilir misin? evet tamam kaldırımdan gideceğiz o zaman sen kaldırım açık o tarafa mı çıkıyorsun burası sol oluyor ya sol oldu burası gerisi tenin içine girelim diğer tarafa doğru gidelim harikasın ben seni çekeceğim niye düşmezsem çok iyiyiz şap varılayım şap şap şap beni buradan siten içine giler misin yukarıya doğru çıkacağız sol tam sol ama nereye gidiyorsun burası tam sol değil ama yarım sol selamünaleyküm amca günaydın deniz çok güzel güneş doğuyor uf ney aaaa bir anda öyle durmaman lazım hadi sallanalım bunun ayaklığı yok mu bunun ayaklığı yokmuş neyse yatayım o zaman şöyle böyle kalsın sen ayaklığın aç ama sen ayaklığın var evet evet senin ayaklığın var sen ayaklığın aç hadi biraz daha gel kırmızı evlenmeyeceğim iyi de ben daha büyüyüm ayy ayaklarının başmışlar neyse ben otururum kıyafetin pis zaten ıslat mı oturunca kırmız otur o kadar ıslanmaz yani 2-3 damlar var baksana bir şey yok sen bir şey yok olmaz oha orada baya su varmış ha tam sen otur o zaman ben sallam ama ben de şu tünelere gireyim mi evet oraya biraz fazla büyüyüm oday girebilirim bak tamam sen gir o zaman ben de burda sallayayım sen de büyümüğe başlamışsın orası içine ama hala girebiliyorsun evet ya bunu ben mi sallıyorum kaç defa 15 yüz 15 yüz kere yaptı o zaman 1500 kere olmuyor mu ah kuş geldi selam aleyküm çok güzeldi ya hadi gel bisiklet sürelim",
+  "segments": [
+    {
+      "start": 1.81,
+      "end": 3.81,
+      "text": "hadi sür"
+    },
+    {
+      "start": 3.81,
+      "end": 5.81,
+      "text": "aynen videonu al diyorum"
+    },
+    {
+      "start": 5.81,
+      "end": 7.81,
+      "text": "videonu çekiyorum"
+    },
+    {
+      "start": 7.81,
+      "end": 11.57,
+      "text": "bilmem nereye atacağımı göreceğiz artık"
+    },
+    {
+      "start": 11.57,
+      "end": 16.54,
+      "text": "sür sür sür"
+    },
+    {
+      "start": 16.54,
+      "end": 20.08,
+      "text": "çok çabuk bırakıyorsun ama"
+    },
+    {
+      "start": 20.08,
+      "end": 22.08,
+      "text": "isteseydin toparlayabilirdin"
+    },
+    {
+      "start": 22.08,
+      "end": 25.46,
+      "text": "devam et devam devam devam devam"
+    },
+    {
+      "start": 25.46,
+      "end": 27.46,
+      "text": "kapıdan"
+    },
+    {
+      "start": 27.46,
+      "end": 29.46,
+      "text": "çıkacağız sağa döneceğiz"
+    },
+    {
+      "start": 29.46,
+      "end": 31.46,
+      "text": "neden?"
+    },
+    {
+      "start": 31.46,
+      "end": 33.46,
+      "text": "çünkü neden olmasın"
+    },
+    {
+      "start": 33.46,
+      "end": 39.87,
+      "text": "düz git düz düz nereye gidiyorsun"
+    },
+    {
+      "start": 39.87,
+      "end": 48.34,
+      "text": "arkamdan geliyorum"
+    },
+    {
+      "start": 48.34,
+      "end": 50.34,
+      "text": "bir sikleti de"
+    },
+    {
+      "start": 50.34,
+      "end": 71.76,
+      "text": "ne fena amuş"
+    },
+    {
+      "start": 71.76,
+      "end": 73.76,
+      "text": "sağdan kaldırımdan gidebilir misin?"
+    },
+    {
+      "start": 73.76,
+      "end": 75.76,
+      "text": "evet"
+    },
+    {
+      "start": 75.76,
+      "end": 79.68,
+      "text": "tamam kaldırımdan gideceğiz o zaman"
+    },
+    {
+      "start": 79.68,
+      "end": 81.68,
+      "text": "sen kaldırım açık"
+    },
+    {
+      "start": 81.68,
+      "end": 83.68,
+      "text": "o tarafa mı çıkıyorsun"
+    },
+    {
+      "start": 83.68,
+      "end": 85.68,
+      "text": "burası sol oluyor ya"
+    },
+    {
+      "start": 85.68,
+      "end": 87.68,
+      "text": "sol oldu burası"
+    },
+    {
+      "start": 87.68,
+      "end": 96.21,
+      "text": "gerisi tenin içine girelim"
+    },
+    {
+      "start": 96.21,
+      "end": 101.5,
+      "text": "diğer tarafa doğru gidelim"
+    },
+    {
+      "start": 101.5,
+      "end": 103.5,
+      "text": "harikasın"
+    },
+    {
+      "start": 103.5,
+      "end": 105.5,
+      "text": "ben seni çekeceğim niye düşmezsem"
+    },
+    {
+      "start": 105.5,
+      "end": 114.58,
+      "text": "çok iyiyiz"
+    },
+    {
+      "start": 114.58,
+      "end": 116.58,
+      "text": "şap varılayım"
+    },
+    {
+      "start": 116.58,
+      "end": 120.5,
+      "text": "şap şap şap"
+    },
+    {
+      "start": 120.5,
+      "end": 122.5,
+      "text": "beni buradan siten içine giler misin"
+    },
+    {
+      "start": 122.5,
+      "end": 124.5,
+      "text": "yukarıya doğru çıkacağız"
+    },
+    {
+      "start": 124.5,
+      "end": 126.5,
+      "text": "sol tam sol ama"
+    },
+    {
+      "start": 126.5,
+      "end": 129.78,
+      "text": "nereye gidiyorsun"
+    },
+    {
+      "start": 129.78,
+      "end": 131.78,
+      "text": "burası tam sol değil ama yarım sol"
+    },
+    {
+      "start": 131.78,
+      "end": 135.63,
+      "text": "selamünaleyküm amca günaydın"
+    },
+    {
+      "start": 135.63,
+      "end": 152.06,
+      "text": "deniz"
+    },
+    {
+      "start": 152.06,
+      "end": 154.06,
+      "text": "çok güzel güneş doğuyor"
+    },
+    {
+      "start": 154.06,
+      "end": 156.06,
+      "text": "uf"
+    },
+    {
+      "start": 156.06,
+      "end": 171.79,
+      "text": "ney"
+    },
+    {
+      "start": 171.79,
+      "end": 173.79,
+      "text": "aaaa"
+    },
+    {
+      "start": 173.79,
+      "end": 175.79,
+      "text": "bir anda öyle durmaman lazım hadi sallanalım"
+    },
+    {
+      "start": 175.79,
+      "end": 179.9,
+      "text": "bunun ayaklığı yok mu"
+    },
+    {
+      "start": 179.9,
+      "end": 181.9,
+      "text": "bunun ayaklığı yokmuş"
+    },
+    {
+      "start": 181.9,
+      "end": 183.9,
+      "text": "neyse yatayım o zaman şöyle"
+    },
+    {
+      "start": 183.9,
+      "end": 185.9,
+      "text": "böyle kalsın"
+    },
+    {
+      "start": 185.9,
+      "end": 187.9,
+      "text": "sen ayaklığın aç ama"
+    },
+    {
+      "start": 187.9,
+      "end": 191.79,
+      "text": "sen ayaklığın var"
+    },
+    {
+      "start": 191.79,
+      "end": 193.79,
+      "text": "evet evet senin ayaklığın var"
+    },
+    {
+      "start": 193.79,
+      "end": 203.7,
+      "text": "sen ayaklığın aç"
+    },
+    {
+      "start": 203.7,
+      "end": 208.38,
+      "text": "hadi biraz daha"
+    },
+    {
+      "start": 208.38,
+      "end": 212.05,
+      "text": "gel"
+    },
+    {
+      "start": 212.05,
+      "end": 214.05,
+      "text": "kırmızı evlenmeyeceğim"
+    },
+    {
+      "start": 214.05,
+      "end": 216.05,
+      "text": "iyi de ben daha büyüyüm ayy"
+    },
+    {
+      "start": 216.05,
+      "end": 218.05,
+      "text": "ayaklarının başmışlar neyse ben otururum"
+    },
+    {
+      "start": 218.05,
+      "end": 220.05,
+      "text": "kıyafetin pis zaten"
+    },
+    {
+      "start": 220.05,
+      "end": 222.05,
+      "text": "ıslat mı"
+    },
+    {
+      "start": 222.05,
+      "end": 224.05,
+      "text": "oturunca kırmız otur"
+    },
+    {
+      "start": 224.05,
+      "end": 227.49,
+      "text": "o kadar ıslanmaz"
+    },
+    {
+      "start": 227.49,
+      "end": 229.49,
+      "text": "yani 2-3 damlar var baksana"
+    },
+    {
+      "start": 229.49,
+      "end": 231.49,
+      "text": "bir şey yok"
+    },
+    {
+      "start": 231.49,
+      "end": 233.49,
+      "text": "sen bir şey yok olmaz"
+    },
+    {
+      "start": 233.49,
+      "end": 235.49,
+      "text": "oha orada"
+    },
+    {
+      "start": 235.49,
+      "end": 237.49,
+      "text": "baya su varmış ha"
+    },
+    {
+      "start": 237.49,
+      "end": 239.49,
+      "text": "tam sen otur o zaman"
+    },
+    {
+      "start": 239.49,
+      "end": 244.56,
+      "text": "ben sallam ama"
+    },
+    {
+      "start": 244.56,
+      "end": 246.56,
+      "text": "ben de şu tünelere gireyim mi"
+    },
+    {
+      "start": 248.56,
+      "end": 250.56,
+      "text": "evet oraya biraz fazla büyüyüm"
+    },
+    {
+      "start": 250.56,
+      "end": 252.56,
+      "text": "oday girebilirim bak"
+    },
+    {
+      "start": 252.56,
+      "end": 254.56,
+      "text": "tamam sen gir o zaman"
+    },
+    {
+      "start": 254.56,
+      "end": 264.69,
+      "text": "ben de burda sallayayım"
+    },
+    {
+      "start": 264.69,
+      "end": 266.69,
+      "text": "sen de büyümüğe başlamışsın orası içine"
+    },
+    {
+      "start": 266.69,
+      "end": 271.54,
+      "text": "ama hala girebiliyorsun"
+    },
+    {
+      "start": 271.54,
+      "end": 273.54,
+      "text": "evet"
+    },
+    {
+      "start": 273.54,
+      "end": 281.1,
+      "text": "ya bunu ben mi sallıyorum"
+    },
+    {
+      "start": 281.1,
+      "end": 290.53,
+      "text": "kaç defa"
+    },
+    {
+      "start": 290.53,
+      "end": 292.53,
+      "text": "15 yüz"
+    },
+    {
+      "start": 292.53,
+      "end": 294.53,
+      "text": "15 yüz kere yaptı"
+    },
+    {
+      "start": 294.53,
+      "end": 296.53,
+      "text": "o zaman 1500 kere olmuyor mu"
+    },
+    {
+      "start": 296.53,
+      "end": 300.64,
+      "text": "ah kuş geldi"
+    },
+    {
+      "start": 302.64,
+      "end": 304.64,
+      "text": "selam aleyküm"
+    },
+    {
+      "start": 304.64,
+      "end": 315.41,
+      "text": "çok güzeldi ya"
+    },
+    {
+      "start": 315.41,
+      "end": 317.41,
+      "text": "hadi gel bisiklet sürelim"
+    }
+  ]
+}

@@ -1,0 +1,184 @@
+{
+  "algorithm_score": 50,
+  "insights": {
+    "message": "analiz + tavsiye üretildi",
+    "silence_seconds": 12.16,
+    "silence_segments_preview": [
+      {
+        "start": 0.0,
+        "end": 1.04,
+        "dur": 1.04
+      },
+      {
+        "start": 2.29,
+        "end": 3.08,
+        "dur": 0.79
+      },
+      {
+        "start": 4.47,
+        "end": 5.17,
+        "dur": 0.7
+      },
+      {
+        "start": 5.65,
+        "end": 6.41,
+        "dur": 0.77
+      },
+      {
+        "start": 8.04,
+        "end": 9.0,
+        "dur": 0.96
+      },
+      {
+        "start": 10.85,
+        "end": 11.59,
+        "dur": 0.74
+      },
+      {
+        "start": 16.22,
+        "end": 16.84,
+        "dur": 0.62
+      },
+      {
+        "start": 18.72,
+        "end": 19.34,
+        "dur": 0.63
+      },
+      {
+        "start": 20.21,
+        "end": 20.94,
+        "dur": 0.73
+      },
+      {
+        "start": 24.65,
+        "end": 25.16,
+        "dur": 0.51
+      },
+      {
+        "start": 28.97,
+        "end": 29.95,
+        "dur": 0.99
+      },
+      {
+        "start": 30.44,
+        "end": 31.6,
+        "dur": 1.16
+      },
+      {
+        "start": 33.53,
+        "end": 34.05,
+        "dur": 0.52
+      },
+      {
+        "start": 35.38,
+        "end": 36.0,
+        "dur": 0.62
+      },
+      {
+        "start": 39.77,
+        "end": 40.62,
+        "dur": 0.85
+      },
+      {
+        "start": 41.16,
+        "end": 41.7,
+        "dur": 0.54
+      }
+    ],
+    "silence_segments_count": 16,
+    "tip": "10 sessiz kesim önerisi var. Diğerleri tavsiye (kullanıcı onayı gerekir).",
+    "job_id": "7f5a9bcb-b863-4fa7-b0d5-0279e564bd1a",
+    "platform": null
+  },
+  "edit_plan": {
+    "version": "edit_plan_v1",
+    "cuts": [
+      {
+        "from": 0.0,
+        "to": 1.04,
+        "reason": "silence"
+      },
+      {
+        "from": 2.29,
+        "to": 3.08,
+        "reason": "silence"
+      },
+      {
+        "from": 4.47,
+        "to": 5.17,
+        "reason": "silence"
+      },
+      {
+        "from": 5.65,
+        "to": 6.41,
+        "reason": "silence"
+      },
+      {
+        "from": 8.04,
+        "to": 9.0,
+        "reason": "silence"
+      },
+      {
+        "from": 10.85,
+        "to": 11.59,
+        "reason": "silence"
+      },
+      {
+        "from": 20.21,
+        "to": 20.94,
+        "reason": "silence"
+      },
+      {
+        "from": 28.97,
+        "to": 29.95,
+        "reason": "silence"
+      },
+      {
+        "from": 30.44,
+        "to": 31.6,
+        "reason": "silence"
+      },
+      {
+        "from": 39.77,
+        "to": 40.62,
+        "reason": "silence"
+      }
+    ]
+  },
+  "tempo_analysis": {
+    "tempo_level": "medium",
+    "average_keep_sec": 3.4,
+    "long_keeps_count": 3,
+    "message": "Tempo orta: akış fena değil ama bazı yerler hızlandırılabilir.",
+    "keep_segments_count": 10
+  },
+  "speed_suggestions": {
+    "count": 3,
+    "tip": "Speed-up önerileri sadece tavsiye. Kullanıcı onayı olmadan uygulanmaz.",
+    "items": [
+      {
+        "from": 11.59,
+        "to": 20.21,
+        "speed": 1.05,
+        "reason": "akış biraz uzun (doğallığı bozmaz)"
+      },
+      {
+        "from": 20.94,
+        "to": 28.97,
+        "speed": 1.05,
+        "reason": "akış biraz uzun (doğallığı bozmaz)"
+      },
+      {
+        "from": 31.6,
+        "to": 39.77,
+        "speed": 1.05,
+        "reason": "akış biraz uzun (doğallığı bozmaz)"
+      }
+    ]
+  },
+  "punch_in_suggestions": {
+    "count": 0,
+    "tip": "Punch-in önerileri sadece tavsiye. Kullanıcı istemezse uygulanmaz.",
+    "items": []
+  }
+}

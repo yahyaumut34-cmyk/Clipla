@@ -1,0 +1,273 @@
+{
+  "algorithm_score": 50,
+  "insights": {
+    "message": "analiz üretildi",
+    "silence_seconds": 37.53,
+    "silence_segments_preview": [
+      {
+        "start": 0.73,
+        "end": 1.34,
+        "dur": 0.61
+      },
+      {
+        "start": 2.36,
+        "end": 4.2,
+        "dur": 1.84
+      },
+      {
+        "start": 4.82,
+        "end": 5.58,
+        "dur": 0.76
+      },
+      {
+        "start": 8.13,
+        "end": 9.34,
+        "dur": 1.21
+      },
+      {
+        "start": 9.36,
+        "end": 10.64,
+        "dur": 1.28
+      },
+      {
+        "start": 13.34,
+        "end": 15.0,
+        "dur": 1.66
+      },
+      {
+        "start": 15.33,
+        "end": 16.08,
+        "dur": 0.75
+      },
+      {
+        "start": 16.8,
+        "end": 17.57,
+        "dur": 0.76
+      },
+      {
+        "start": 19.16,
+        "end": 20.24,
+        "dur": 1.07
+      },
+      {
+        "start": 21.79,
+        "end": 22.39,
+        "dur": 0.6
+      },
+      {
+        "start": 23.39,
+        "end": 24.27,
+        "dur": 0.88
+      },
+      {
+        "start": 25.15,
+        "end": 26.23,
+        "dur": 1.08
+      },
+      {
+        "start": 26.27,
+        "end": 26.96,
+        "dur": 0.69
+      },
+      {
+        "start": 28.77,
+        "end": 30.45,
+        "dur": 1.68
+      },
+      {
+        "start": 31.14,
+        "end": 32.79,
+        "dur": 1.65
+      },
+      {
+        "start": 34.33,
+        "end": 35.05,
+        "dur": 0.72
+      },
+      {
+        "start": 35.81,
+        "end": 36.47,
+        "dur": 0.66
+      },
+      {
+        "start": 37.37,
+        "end": 38.05,
+        "dur": 0.67
+      },
+      {
+        "start": 39.33,
+        "end": 39.91,
+        "dur": 0.58
+      },
+      {
+        "start": 42.49,
+        "end": 43.85,
+        "dur": 1.36
+      }
+    ],
+    "silence_segments_count": 35,
+    "tip": "23 sessiz kesim önerisi var.",
+    "job_id": "3badb55c-f0a8-4371-a351-8d2965dccf39",
+    "platform": null
+  },
+  "edit_plan": {
+    "version": "edit_plan_v1",
+    "cuts": [
+      {
+        "from": 2.36,
+        "to": 4.2,
+        "reason": "silence"
+      },
+      {
+        "from": 4.82,
+        "to": 5.58,
+        "reason": "silence"
+      },
+      {
+        "from": 8.13,
+        "to": 9.34,
+        "reason": "silence"
+      },
+      {
+        "from": 9.36,
+        "to": 10.64,
+        "reason": "silence"
+      },
+      {
+        "from": 13.34,
+        "to": 15.0,
+        "reason": "silence"
+      },
+      {
+        "from": 15.33,
+        "to": 16.08,
+        "reason": "silence"
+      },
+      {
+        "from": 16.8,
+        "to": 17.57,
+        "reason": "silence"
+      },
+      {
+        "from": 19.16,
+        "to": 20.24,
+        "reason": "silence"
+      },
+      {
+        "from": 23.39,
+        "to": 24.27,
+        "reason": "silence"
+      },
+      {
+        "from": 25.15,
+        "to": 26.23,
+        "reason": "silence"
+      },
+      {
+        "from": 28.77,
+        "to": 30.45,
+        "reason": "silence"
+      },
+      {
+        "from": 31.14,
+        "to": 32.79,
+        "reason": "silence"
+      },
+      {
+        "from": 34.33,
+        "to": 35.05,
+        "reason": "silence"
+      },
+      {
+        "from": 42.49,
+        "to": 43.85,
+        "reason": "silence"
+      },
+      {
+        "from": 46.13,
+        "to": 49.52,
+        "reason": "silence"
+      },
+      {
+        "from": 52.24,
+        "to": 53.46,
+        "reason": "silence"
+      },
+      {
+        "from": 68.65,
+        "to": 70.12,
+        "reason": "silence"
+      },
+      {
+        "from": 77.72,
+        "to": 79.25,
+        "reason": "silence"
+      },
+      {
+        "from": 81.08,
+        "to": 82.16,
+        "reason": "silence"
+      },
+      {
+        "from": 83.07,
+        "to": 84.27,
+        "reason": "silence"
+      },
+      {
+        "from": 92.76,
+        "to": 94.13,
+        "reason": "silence"
+      },
+      {
+        "from": 94.94,
+        "to": 95.7,
+        "reason": "silence"
+      },
+      {
+        "from": 95.7,
+        "to": 97.04,
+        "reason": "silence"
+      }
+    ]
+  },
+  "tempo_analysis": {
+    "tempo_level": "medium",
+    "average_keep_sec": 3.19,
+    "long_keeps_count": 4,
+    "message": "Tempo orta: akış fena değil ama bazı yerler hızlandırılabilir.",
+    "keep_segments_count": 21
+  },
+  "whisper": {
+    "model": "small",
+    "language": "tr"
+  },
+  "transcript_preview": "Bugün Türkiye'nizi tanıtacağım size. Kurucumuz Yüce, Lerin Yücesi Mustafa Kemal Atatürk. Bayrağımız Ay Yıldız. Ve ülkemiz Bamsızları 1920'yi Kaç yılında? Yirmi beş. Yirmi üç yılında kazanmak ştır. Başkentimiz Ankara. Doğru doğru. Para bilimimiz Türk Lüresi şu şekilde lanse ediliyor. 2008 yılında bu Türk Lüresi'nde geçi…",
+  "segments": {
+    "hook": {
+      "text": "Bugün Türkiye'nizi tanıtacağım size. Kurucumuz Yüce, Lerin Yücesi Mustafa Kemal Atatürk.",
+      "reason": "first strong sentences"
+    },
+    "middle": [
+      {
+        "text": "Antalya'ımızın yöresel tatlarından Tavak tatlımız çok meşhurdur.",
+        "reason": "long/high-signal sentence"
+      },
+      {
+        "text": "Ondan sonra yöresel kıyafetlerimiz genelde yörük kıyafetidir.",
+        "reason": "long/high-signal sentence"
+      },
+      {
+        "text": "Kalı içi hem turistik bir yer hem de Antalya'nın kurulduğu İlk semtlerden bir tanesi düz.",
+        "reason": "long/high-signal sentence"
+      },
+      {
+        "text": "Düden şelalesi ise tamamıyla Deniz'de buluştuğu bir yerde Dua harikası olarak Antalya'nın göz bebi olması Hasedi ile buraya gittik.",
+        "reason": "long/high-signal sentence"
+      }
+    ],
+    "closing": {
+      "text": "Afiyet olsun.",
+      "reason": "last sentence closing"
+    }
+  }
+}

@@ -1,0 +1,113 @@
+{
+  "model": "small",
+  "language": "tr",
+  "duration": 42.6550625,
+  "text": "Hayır. Bayanlar baylar. Bugün birazcık garip haberler var. Babam. Şey. Bugün annemden sınır. İçmişleri istemiş bu tabi. Aklımda annem sınır içmiş. Babam yokken. Anne. Ne zaman? E boynu öyle kokuyordu canım. Boynu sigara mı kokuyordu? Evet. Allah Allah. İçmişti gerçekten. Vay be. Bunu bana söylerim. Sadece tadına baktı. Sadece tadına mı baktı yoksa? Annenler falan orada sigara içerken boynuna kokusu sınmış olabilir mi? İçti. İçti gördün mü?",
+  "segments": [
+    {
+      "start": 0.62,
+      "end": 2.62,
+      "text": "Hayır."
+    },
+    {
+      "start": 2.62,
+      "end": 4.62,
+      "text": "Bayanlar baylar."
+    },
+    {
+      "start": 4.62,
+      "end": 8.62,
+      "text": "Bugün birazcık garip haberler var."
+    },
+    {
+      "start": 8.62,
+      "end": 10.62,
+      "text": "Babam."
+    },
+    {
+      "start": 10.62,
+      "end": 11.62,
+      "text": "Şey."
+    },
+    {
+      "start": 11.62,
+      "end": 14.62,
+      "text": "Bugün annemden sınır."
+    },
+    {
+      "start": 14.62,
+      "end": 16.62,
+      "text": "İçmişleri istemiş bu tabi."
+    },
+    {
+      "start": 16.62,
+      "end": 18.62,
+      "text": "Aklımda annem sınır içmiş."
+    },
+    {
+      "start": 18.62,
+      "end": 20.62,
+      "text": "Babam yokken."
+    },
+    {
+      "start": 20.62,
+      "end": 22.62,
+      "text": "Anne. Ne zaman?"
+    },
+    {
+      "start": 22.62,
+      "end": 24.62,
+      "text": "E boynu öyle kokuyordu canım."
+    },
+    {
+      "start": 24.62,
+      "end": 26.62,
+      "text": "Boynu sigara mı kokuyordu?"
+    },
+    {
+      "start": 26.62,
+      "end": 27.62,
+      "text": "Evet. Allah Allah."
+    },
+    {
+      "start": 27.62,
+      "end": 29.62,
+      "text": "İçmişti gerçekten."
+    },
+    {
+      "start": 29.62,
+      "end": 31.62,
+      "text": "Vay be."
+    },
+    {
+      "start": 31.62,
+      "end": 33.62,
+      "text": "Bunu bana söylerim."
+    },
+    {
+      "start": 33.62,
+      "end": 35.62,
+      "text": "Sadece tadına baktı."
+    },
+    {
+      "start": 35.62,
+      "end": 37.62,
+      "text": "Sadece tadına mı baktı yoksa?"
+    },
+    {
+      "start": 37.62,
+      "end": 39.62,
+      "text": "Annenler falan orada sigara içerken boynuna kokusu sınmış olabilir mi?"
+    },
+    {
+      "start": 39.62,
+      "end": 41.62,
+      "text": "İçti."
+    },
+    {
+      "start": 41.62,
+      "end": 43.62,
+      "text": "İçti gördün mü?"
+    }
+  ]
+}

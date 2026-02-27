@@ -1,0 +1,33 @@
+{
+  "algorithm_score": 50,
+  "insights": {
+    "message": "analiz + tavsiye üretildi",
+    "job_id": "8e1e08bc-4f2f-4ed0-80fa-d0b69d591693",
+    "platform": "youtube",
+    "duration_sec": 318.252698
+  },
+  "speed_suggestions": {
+    "count": 1,
+    "tip": "Speed-up önerileri sadece tavsiye. Kullanıcı onayı olmadan uygulanmaz.",
+    "items": [
+      {
+        "from": 5.0,
+        "to": 15.0,
+        "speed": 1.1,
+        "reason": "test"
+      }
+    ]
+  },
+  "punch_in_suggestions": {
+    "count": 1,
+    "tip": "Punch-in önerileri sadece tavsiye. Kullanıcı istemezse uygulanmaz.",
+    "items": [
+      {
+        "from": 20.0,
+        "to": 24.0,
+        "zoom": 1.06,
+        "reason": "test"
+      }
+    ]
+  }
+}

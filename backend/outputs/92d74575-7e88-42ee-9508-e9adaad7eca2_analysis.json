@@ -1,0 +1,128 @@
+{
+  "algorithm_score": 70,
+  "insights": {
+    "message": "analiz + tavsiye üretildi",
+    "silence_seconds": 5.62,
+    "silence_segments_preview": [
+      {
+        "start": 2.55,
+        "end": 3.18,
+        "dur": 0.63
+      },
+      {
+        "start": 3.47,
+        "end": 4.01,
+        "dur": 0.54
+      },
+      {
+        "start": 5.01,
+        "end": 5.72,
+        "dur": 0.71
+      },
+      {
+        "start": 28.35,
+        "end": 29.47,
+        "dur": 1.12
+      },
+      {
+        "start": 29.87,
+        "end": 30.41,
+        "dur": 0.54
+      },
+      {
+        "start": 35.61,
+        "end": 36.19,
+        "dur": 0.58
+      },
+      {
+        "start": 45.52,
+        "end": 46.39,
+        "dur": 0.87
+      },
+      {
+        "start": 161.07,
+        "end": 161.69,
+        "dur": 0.62
+      }
+    ],
+    "silence_segments_count": 8,
+    "tip": "3 sessiz kesim önerisi var. Diğerleri tavsiye (kullanıcı onayı gerekir).",
+    "job_id": "92d74575-7e88-42ee-9508-e9adaad7eca2",
+    "platform": "shorts"
+  },
+  "edit_plan": {
+    "version": "edit_plan_v1",
+    "cuts": [
+      {
+        "from": 5.01,
+        "to": 5.72,
+        "reason": "silence"
+      },
+      {
+        "from": 28.35,
+        "to": 29.47,
+        "reason": "silence"
+      },
+      {
+        "from": 45.52,
+        "to": 46.39,
+        "reason": "silence"
+      }
+    ]
+  },
+  "tempo_analysis": {
+    "tempo_level": "slow",
+    "average_keep_sec": 54.83,
+    "long_keeps_count": 3,
+    "message": "Tempo yavaş olabilir: bazı bölümler uzun akıyor.",
+    "keep_segments_count": 4
+  },
+  "speed_suggestions": {
+    "count": 3,
+    "tip": "Speed-up önerileri sadece tavsiye. Kullanıcı onayı olmadan uygulanmaz.",
+    "items": [
+      {
+        "from": 5.72,
+        "to": 28.35,
+        "speed": 1.1,
+        "reason": "uzun akış (hafif hız iyi gelir)"
+      },
+      {
+        "from": 29.47,
+        "to": 45.52,
+        "speed": 1.1,
+        "reason": "uzun akış (hafif hız iyi gelir)"
+      },
+      {
+        "from": 46.39,
+        "to": 222.03,
+        "speed": 1.1,
+        "reason": "uzun akış (hafif hız iyi gelir)"
+      }
+    ]
+  },
+  "punch_in_suggestions": {
+    "count": 3,
+    "tip": "Punch-in önerileri sadece tavsiye. Kullanıcı istemezse uygulanmaz.",
+    "items": [
+      {
+        "from": 15.04,
+        "to": 19.04,
+        "zoom": 1.12,
+        "reason": "çok uzun sabit akış (dikkat toparlamak için hafif zoom)"
+      },
+      {
+        "from": 35.5,
+        "to": 39.5,
+        "zoom": 1.08,
+        "reason": "uzun sabit akış (hafif vurgu)"
+      },
+      {
+        "from": 132.21,
+        "to": 136.21,
+        "zoom": 1.12,
+        "reason": "çok uzun sabit akış (dikkat toparlamak için hafif zoom)"
+      }
+    ]
+  }
+}
