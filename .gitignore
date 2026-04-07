@@ -31,7 +31,20 @@ yarn-error.*
 *.pem
 
 # local env files
+.env
+.env.*
 .env*.local
+
+# Signing — ASLA commit'leme
+*.jks
+*.keystore
+google-service-account.json
+google-services.json
+GoogleService-Info.plist
+key.properties
+
+# EAS secrets
+credentials.json
 
 # typescript
 *.tsbuildinfo

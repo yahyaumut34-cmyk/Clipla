@@ -1,0 +1,70 @@
+name: EAS Build & Submit
+
+on:
+  push:
+    branches: [main, master]
+    paths-ignore:
+      - 'flutter/**'
+      - '**.md'
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Platform'
+        required: true
+        default: 'all'
+        type: choice
+        options: [all, ios, android]
+      profile:
+        description: 'Build profili'
+        required: true
+        default: 'production'
+        type: choice
+        options: [production, preview]
+      submit:
+        description: 'Store'a gönder?'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  build:
+    name: EAS Build (${{ github.event.inputs.platform || 'all' }})
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node.js Kur
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Bağımlılıkları yükle
+        run: npm ci
+
+      - name: EAS CLI kur
+        run: npm install -g eas-cli
+
+      - name: EAS Build
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          # Supabase
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+          # Backend & API
+          EXPO_PUBLIC_BACKEND_URL: ${{ secrets.EXPO_PUBLIC_BACKEND_URL }}
+          EXPO_PUBLIC_API_KEY: ${{ secrets.EXPO_PUBLIC_API_KEY }}
+        run: |
+          PLATFORM="${{ github.event.inputs.platform || 'all' }}"
+          PROFILE="${{ github.event.inputs.profile || 'production' }}"
+          eas build --platform $PLATFORM --profile $PROFILE --non-interactive
+
+      - name: EAS Submit (opsiyonel)
+        if: ${{ github.event.inputs.submit == 'true' }}
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          PLATFORM="${{ github.event.inputs.platform || 'all' }}"
+          eas submit --platform $PLATFORM --profile production --non-interactive --latest

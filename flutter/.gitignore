@@ -1,0 +1,14 @@
+/.dart_tool/
+/.idea/
+/.vscode/
+/build/
+/.packages
+/.flutter-plugins
+/.flutter-plugins-dependencies
+/pubspec.lock
+/ios/Flutter/Flutter.framework
+/ios/Flutter/Flutter.podspec
+/ios/Pods/
+/ios/Runner.xcworkspace/
+/android/.gradle/
+/android/app/build/

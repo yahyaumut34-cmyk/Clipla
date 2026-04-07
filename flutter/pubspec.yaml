@@ -1,0 +1,39 @@
+name: clipla_flutter
+description: Clipla-Y Flutter frontend for mobile platforms.
+publish_to: 'none'
+version: 1.0.0+1
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  # HTTP & networking
+  http: ^1.2.0
+  dio: ^5.7.0
+  # State management
+  provider: ^6.1.2
+  # Storage
+  shared_preferences: ^2.3.0
+  # File & media
+  file_picker: ^8.1.0
+  path_provider: ^2.1.4
+  # Video
+  video_player: ^2.9.2
+  chewie: ^1.8.5
+  # Voice
+  flutter_tts: ^4.2.0
+  speech_to_text: ^7.0.0
+  record: ^5.2.0
+  # Sharing & linking
+  share_plus: ^10.0.0
+  url_launcher: ^6.3.1
+  # Permissions
+  permission_handler: ^11.3.1
+
+development_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+flutter:
+  uses-material-design: true

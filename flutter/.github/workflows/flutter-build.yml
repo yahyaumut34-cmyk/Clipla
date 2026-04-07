@@ -1,0 +1,123 @@
+name: Flutter Build & Release
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'lib/**'
+      - 'pubspec.yaml'
+      - '.github/workflows/flutter-build.yml'
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Platform'
+        required: true
+        default: 'android'
+        type: choice
+        options: [android, ios, both]
+
+env:
+  BACKEND_URL: ${{ secrets.FLUTTER_BACKEND_URL }}
+  API_KEY: ${{ secrets.FLUTTER_API_KEY }}
+
+# ── ANDROID BUILD ──────────────────────────────────────────────────────────────
+jobs:
+  build-android:
+    name: Android App Bundle
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.platform != 'ios' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Java 17 Kur
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Flutter Kur
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.27.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Bağımlılıkları yükle
+        run: flutter pub get
+
+      - name: Android Keystore Kur
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEY_PROPERTIES: ${{ secrets.ANDROID_KEY_PROPERTIES }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 --decode > android/clipla-release.jks
+          echo "$KEY_PROPERTIES" > android/key.properties
+
+      - name: App Bundle Oluştur
+        run: |
+          flutter build appbundle --release \
+            --dart-define=BACKEND_URL=${{ env.BACKEND_URL }} \
+            --dart-define=API_KEY=${{ env.API_KEY }}
+
+      - name: Artefaktı Yükle
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release-${{ github.sha }}
+          path: build/app/outputs/bundle/release/app-release.aab
+          retention-days: 30
+
+      - name: Play Store'a Gönder (opsiyonel)
+        if: ${{ github.ref == 'refs/heads/main' }}
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          packageName: com.cliplav.app
+          releaseFiles: build/app/outputs/bundle/release/app-release.aab
+          track: internal
+          status: draft
+
+# ── iOS BUILD (Mac Runner) ─────────────────────────────────────────────────────
+  build-ios:
+    name: iOS IPA
+    runs-on: macos-latest
+    if: ${{ github.event.inputs.platform != 'android' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Flutter Kur
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.27.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Bağımlılıkları yükle
+        run: flutter pub get
+
+      - name: iOS Pod'ları yükle
+        working-directory: ios
+        run: pod install --repo-update
+
+      - name: iOS Build
+        run: |
+          flutter build ios --release --no-codesign \
+            --dart-define=BACKEND_URL=${{ env.BACKEND_URL }} \
+            --dart-define=API_KEY=${{ env.API_KEY }}
+
+      - name: IPA Oluştur
+        run: |
+          mkdir -p Payload
+          cp -r build/ios/iphoneos/Runner.app Payload/
+          zip -r clipla-release.ipa Payload/
+          rm -rf Payload/
+
+      - name: Artefaktı Yükle
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-release-${{ github.sha }}
+          path: clipla-release.ipa
+          retention-days: 30

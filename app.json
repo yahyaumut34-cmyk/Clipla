@@ -1,18 +1,30 @@
 {
   "expo": {
-    "name": "clipla-app",
-    "slug": "clipla-app",
+    "name": "clipla-y",
+    "slug": "clipla-y",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#07090f"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.cliplav.app",
+      "usesIcloudStorage": true,
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Clipla-Y, video seçmek için fotoğraf kütüphanesine erişmek istiyor.",
+        "NSPhotoLibraryAddUsageDescription": "Clipla-Y, video kaydetmek için fotoğraf kütüphanesine erişmek istiyor.",
+        "NSCameraUsageDescription": "Clipla-Y, video çekmek için kameraya erişmek istiyor.",
+        "NSMicrophoneUsageDescription": "Clipla-Y, sesli komutlar için mikrofona erişmek istiyor.",
+        "NSSpeechRecognitionUsageDescription": "Clipla-Y, sesli edit komutlarını anlamak için konuşma tanımayı kullanıyor.",
+        "UIFileSharingEnabled": true,
+        "LSSupportsOpeningDocumentsInPlace": true,
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -20,10 +32,47 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
-      }
+      },
+      "package": "com.cliplav.app",
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.INTERNET"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-document-picker",
+        {
+          "iCloudContainerEnvironment": "Production"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Clipla-Y, video seçmek için fotoğraf kütüphanesine erişmek istiyor.",
+          "cameraPermission": "Clipla-Y, video çekmek için kameraya erişmek istiyor."
+        }
+      ],
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Clipla-Y, sesli komutlar için mikrofona erişmek istiyor.",
+          "speechRecognitionPermission": "Clipla-Y, sesli edit komutlarını anlamak için konuşma tanımayı kullanıyor."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "f4ed3165-7a2d-48c4-b968-29c42f0a1e3b"
+      },
+      "apiKey": "",
+      "backendUrl": ""
     }
   }
 }
