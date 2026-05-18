@@ -15,6 +15,33 @@ export const SUB_LANGS = {
   ar: 'Arapça',
 };
 
+export const EDIT_TEMPLATES = [
+  {
+    id: 'tiktok_viral', label: 'TikTok Viral', emoji: '🔥',
+    platform: 'tiktok', targetSec: 30, removeFillers: true,
+    desc: '~30 saniye · dikey · enerjik kurgu',
+    color: '#ff2d55',
+  },
+  {
+    id: 'youtube_short', label: 'YouTube Short', emoji: '▶',
+    platform: 'youtube_shorts', targetSec: 60, removeFillers: true,
+    desc: '~60 saniye · dikey · temiz kurgu',
+    color: '#e05c2a',
+  },
+  {
+    id: 'reels', label: 'Reels', emoji: '📸',
+    platform: 'instagram', targetSec: 30, removeFillers: true,
+    desc: '~30 saniye · kare format · reels',
+    color: '#c13584',
+  },
+  {
+    id: 'clean_cut', label: 'Clean Cut', emoji: '✂',
+    platform: 'youtube', targetSec: null, removeFillers: false,
+    desc: 'Orijinal süre · sadece sessizlik temizlenir',
+    color: '#1db974',
+  },
+];
+
 export const PLAT_LABELS = {
   youtube_shorts: 'Shorts',
   tiktok:         'TikTok',

@@ -8,22 +8,136 @@
 
 import { createClient } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { IS_WEB } from './theme';
 
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
 
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  console.warn('[supabase] EXPO_PUBLIC_SUPABASE_URL veya EXPO_PUBLIC_SUPABASE_ANON_KEY eksik!');
+const _isValidUrl = (url) => {
+  try { new URL(url); return url.startsWith('https://'); }
+  catch { return false; }
+};
+
+export const DEV_MODE = !_isValidUrl(SUPABASE_URL) || !SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.includes('GİR');
+
+let supabaseClient;
+if (DEV_MODE) {
+  console.warn('[supabase] Dev modu: Supabase credentials eksik, sahte istemci kullanılıyor.');
+  const _noop = async () => ({ data: null, error: null });
+  const _noopSub = { unsubscribe: () => {} };
+  supabaseClient = {
+    from: () => ({
+      select: () => ({ eq: () => ({ single: _noop, order: _noop }), order: _noop, then: (f) => f({ data: [], error: null }) }),
+      insert: () => ({ select: () => ({ single: _noop }), then: (f) => f({ data: null, error: null }) }),
+      update: () => ({ eq: _noop }),
+      upsert: () => ({ then: (f) => f({ data: null, error: null }) }),
+    }),
+    rpc: _noop,
+    auth: {
+      getSession:            async () => ({ data: { session: null }, error: null }),
+      getUser:               async () => ({ data: { user: null }, error: null }),
+      signUp:                async () => ({ data: { user: null }, error: null }),
+      signInWithPassword:    async () => ({ data: { session: null }, error: null }),
+      signInWithOAuth:       async () => ({ data: null, error: null }),
+      signOut:               async () => ({ error: null }),
+      setSession:            async () => ({ data: null, error: null }),
+      resetPasswordForEmail: async () => ({ error: null }),
+      onAuthStateChange:     (cb) => { return { data: { subscription: _noopSub } }; },
+    },
+  };
+} else {
+  supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+      storage: AsyncStorage,
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: IS_WEB,
+    },
+  });
 }
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: {
-    storage: AsyncStorage,          // React Native için AsyncStorage
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: false,      // Native'de URL yoktur
-  },
-});
+export const supabase = supabaseClient;
+
+// ── AUTH ─────────────────────────────────────────────────────────────────────
+
+/** Email + şifre ile yeni hesap oluşturur */
+export async function signUp(email, password) {
+  const result = await supabase.auth.signUp({ email, password });
+  if (result.data?.user && !result.error) {
+    // users tablosuna kayıt ekle (plan başlangıcı)
+    await supabase.from('users').upsert({
+      id:                   result.data.user.id,
+      email,
+      plan:                 'free',
+      daily_uploads_count:  0,
+      daily_uploads_date:   new Date().toISOString().slice(0, 10),
+    }, { onConflict: 'id', ignoreDuplicates: true }).then(({ error }) => {
+      if (error) console.warn('[supabase] signUp users insert:', error.message);
+    });
+  }
+  return result;
+}
+
+/** Email + şifre ile giriş yapar */
+export function signIn(email, password) {
+  return supabase.auth.signInWithPassword({ email, password });
+}
+
+/** Oturumu kapatır */
+export function signOut() {
+  return supabase.auth.signOut();
+}
+
+/** Mevcut oturumu döner */
+export function getSession() {
+  return supabase.auth.getSession();
+}
+
+/** Auth durumu değişince cb'yi çağırır */
+export function onAuthStateChange(cb) {
+  return supabase.auth.onAuthStateChange(cb);
+}
+
+/** GitHub OAuth ile giriş — Web'de yeni sekme, Native'de in-app browser */
+export async function signInWithGitHub() {
+  if (IS_WEB) {
+    return supabase.auth.signInWithOAuth({
+      provider: 'github',
+      options: { redirectTo: window.location.origin },
+    });
+  }
+  // Native: expo-web-browser ile OAuth
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'github',
+    options: {
+      redirectTo: 'com.cliplav.app://auth/callback',
+      skipBrowserRedirect: true,
+    },
+  });
+  if (error || !data?.url) return { error };
+
+  const { openAuthSessionAsync } = await import('expo-web-browser');
+  const result = await openAuthSessionAsync(data.url, 'com.cliplav.app://auth/callback');
+
+  if (result.type === 'success' && result.url) {
+    const url = new URL(result.url);
+    const params = new URLSearchParams(url.hash.slice(1));
+    const access_token  = params.get('access_token');
+    const refresh_token = params.get('refresh_token');
+    if (access_token) {
+      return supabase.auth.setSession({ access_token, refresh_token });
+    }
+  }
+  return { error: new Error('GitHub girişi iptal edildi') };
+}
+
+/** Şifre sıfırlama emaili gönderir */
+export function resetPassword(email) {
+  const redirectTo = IS_WEB
+    ? `${window.location.origin}/reset-password`
+    : 'com.cliplav.app://reset-password';
+  return supabase.auth.resetPasswordForEmail(email, { redirectTo });
+}
 
 // ── Yardımcı fonksiyonlar ────────────────────────────────────────────────────
 

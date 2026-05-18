@@ -24,10 +24,9 @@ export const BASE_URL = Platform.OS === 'web'
 export const WARN_BYTES = 300 * 1024 * 1024;
 const MAX_BYTES = 800 * 1024 * 1024;
 
-// API key — Expo config veya env'den okunur
-// Production'da EXPO_PUBLIC_API_KEY ortam değişkenini ayarlayın
 const API_KEY =
   Constants?.expoConfig?.extra?.apiKey ||
+  Constants?.manifest?.extra?.apiKey ||
   process.env.EXPO_PUBLIC_API_KEY ||
   '1p8LO_BwlNTZW_o1ZVvXRWBu_gv_HON0O6yVDekJIK4';
 
@@ -202,7 +201,7 @@ export async function generateShorts(jobId, {
   semanticAnalysis   = true,
   requireCompleteness = true,
   detectEmotionalPeak = true,
-} = {}, plan = 'free') {
+} = {}, plan = 'pro') {
   const res = await fetch(`${BASE_URL}/api/shorts/${jobId}`, {
     method: 'POST',
     headers: authHeaders({ 'Content-Type': 'application/json', 'X-User-Plan': plan }),
@@ -239,18 +238,18 @@ export async function getAutoEditStatus(jobId) {
   return data;
 }
 
-export async function generateSubtitles(jobId, { language = 'tr', burn_in = true, font_size = 16, position = 'bottom' } = {}) {
+export async function generateSubtitles(jobId, { language = 'tr', burn_in = true, font_size = 16, position = 'bottom', style = 'bold' } = {}) {
   const res = await fetch(`${BASE_URL}/api/subtitles/${jobId}`, {
     method: 'POST',
     headers: authHeaders({ 'Content-Type': 'application/json' }),
-    body: JSON.stringify({ language, burn_in, font_size, position }),
+    body: JSON.stringify({ language, burn_in, font_size, position, style }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.detail || 'Altyazı oluşturulamadı. Lütfen tekrar deneyin.');
   return data;
 }
 
-export async function applyEffect(jobId, { category, intensity = 0.8, timestamp = null } = {}, plan = 'free') {
+export async function applyEffect(jobId, { category, intensity = 0.8, timestamp = null } = {}, plan = 'pro') {
   const res = await fetch(`${BASE_URL}/api/effects/${jobId}`, {
     method: 'POST',
     headers: authHeaders({ 'Content-Type': 'application/json', 'X-User-Plan': plan }),
@@ -275,10 +274,10 @@ export async function transcribeAudio(audioBlob, filename = 'command.webm', lang
   return data;
 }
 
-export async function addSoundEffect(jobId, { sfx_type, timestamp = null, volume = 0.85 } = {}) {
+export async function addSoundEffect(jobId, { sfx_type, timestamp = null, volume = 0.85 } = {}, plan = 'pro') {
   const res = await fetch(`${BASE_URL}/api/sfx/${jobId}`, {
     method: 'POST',
-    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    headers: authHeaders({ 'Content-Type': 'application/json', 'X-User-Plan': plan }),
     body: JSON.stringify({ sfx_type, timestamp, volume }),
   });
   const data = await res.json();
@@ -286,10 +285,204 @@ export async function addSoundEffect(jobId, { sfx_type, timestamp = null, volume
   return data;
 }
 
-export async function addMusic(jobId, { mood, start_time = 0, end_time = null, volume = 0.22 } = {}) {
-  const res = await fetch(`${BASE_URL}/api/music/${jobId}`, {
+export async function sendChatMessageStream({ message, history = [], jobId, language = 'tr-TR', onChunk, onDone }) {
+  const res = await fetch(`${BASE_URL}/api/chat/stream`, {
     method: 'POST',
     headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ message, history, job_id: jobId, language }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || 'Streaming başlatılamadı.');
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop(); // incomplete last line stays in buffer
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      try {
+        const payload = JSON.parse(line.slice(6));
+        if (payload.done) {
+          onDone?.(payload);
+        } else if (payload.text) {
+          onChunk?.(payload.text);
+        }
+      } catch { /* ignore malformed SSE lines */ }
+    }
+  }
+}
+
+export async function mergeVideos(jobIds, { transitions = [], transitionDuration = 0.5, resolution = 'source' } = {}) {
+  const res = await fetch(`${BASE_URL}/api/merge`, {
+    method: 'POST',
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ job_ids: jobIds, transitions, transition_duration: transitionDuration, resolution }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || 'Videolar birleştirilemedi. Lütfen tekrar deneyin.');
+  return data;
+}
+
+export async function trimMerge(clips, { transition = 'cut', transitionDuration = 0.5, resolution = 'source' } = {}) {
+  const res = await fetch(`${BASE_URL}/api/trim-merge`, {
+    method: 'POST',
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ clips, transition, transition_duration: transitionDuration, resolution }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || 'Trim/birleştirme başarısız.');
+  return data;
+}
+
+export async function beatSync(jobId, { effect = 'pulse', sensitivity = 0.7, maxBeats = 80 } = {}, plan = 'pro') {
+  const res = await fetch(`${BASE_URL}/api/beat-sync/${jobId}`, {
+    method: 'POST',
+    headers: authHeaders({ 'Content-Type': 'application/json', 'X-User-Plan': plan }),
+    body: JSON.stringify({ effect, sensitivity, max_beats: maxBeats }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || 'Beat sync uygulanamadı. Lütfen tekrar deneyin.');
+  return data;
+}
+
+export async function removeBackground(jobId, { mode = 'chromakey', chromaColor = 'green', similarity = 0.25, blend = 0.05, bgColor = '#000000', fpsLimit = 6 } = {}, plan = 'pro') {
+  const res = await fetch(`${BASE_URL}/api/bg-remove/${jobId}`, {
+    method: 'POST',
+    headers: authHeaders({ 'Content-Type': 'application/json', 'X-User-Plan': plan }),
+    body: JSON.stringify({ mode, chroma_color: chromaColor, similarity, blend, bg_color: bgColor, fps_limit: fpsLimit }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || 'Arka plan kaldırılamadı. Lütfen tekrar deneyin.');
+  return data;
+}
+
+export async function undoEdit(jobId) {
+  const res = await fetch(`${BASE_URL}/api/undo/${jobId}`, {
+    method: 'POST',
+    headers: authHeaders(),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || 'Geri alma başarısız.');
+  return data;
+}
+
+export async function getEditHistory(jobId) {
+  const res = await fetch(`${BASE_URL}/api/edit-history/${jobId}`, {
+    headers: authHeaders(),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || 'Geçmiş alınamadı.');
+  return data;
+}
+
+export async function getEditPreview(jobId) {
+  const res = await fetch(`${BASE_URL}/api/preview/${jobId}`, {
+    headers: authHeaders(),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || 'Önizleme alınamadı.');
+  return data;
+}
+
+export async function enhanceAudio(jobId, { profile = 'clean', customAf = null } = {}, plan = 'pro') {
+  const res = await fetch(`${BASE_URL}/api/enhance-audio/${jobId}`, {
+    method: 'POST',
+    headers: authHeaders({ 'Content-Type': 'application/json', 'X-User-Plan': plan }),
+    body: JSON.stringify({ profile, custom_af: customAf }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || 'Ses iyileştirme başarısız. Lütfen tekrar deneyin.');
+  return data;
+}
+
+export async function changeSpeed(jobId, { speed = 1.5 } = {}) {
+  const res = await fetch(`${BASE_URL}/api/speed/${jobId}`, {
+    method: 'POST',
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ speed }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || 'Hız değiştirilemedi.');
+  return data;
+}
+
+export async function colorGrade(jobId, { brightness = 0, contrast = 1, saturation = 1, gamma = 1, preset = null } = {}) {
+  const res = await fetch(`${BASE_URL}/api/color/${jobId}`, {
+    method: 'POST',
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ brightness, contrast, saturation, gamma, preset }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || 'Renk düzenleme başarısız.');
+  return data;
+}
+
+export async function transformVideo(jobId, { rotate = null, aspect_ratio = null, flip = null } = {}) {
+  const res = await fetch(`${BASE_URL}/api/transform/${jobId}`, {
+    method: 'POST',
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ rotate, aspect_ratio, flip }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || 'Dönüşüm başarısız.');
+  return data;
+}
+
+export async function addTextOverlay(jobId, { text, position = 'bottom', font_size = 48, color = 'white', start_sec = null, end_sec = null } = {}) {
+  const res = await fetch(`${BASE_URL}/api/text/${jobId}`, {
+    method: 'POST',
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ text, position, font_size, color, start_sec, end_sec }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || 'Metin eklenemedi.');
+  return data;
+}
+
+export async function applyFilter(jobId, { filter_name } = {}) {
+  const res = await fetch(`${BASE_URL}/api/filters/${jobId}`, {
+    method: 'POST',
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ filter_name }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || 'Filtre uygulanamadı.');
+  return data;
+}
+
+export async function reverseVideo(jobId) {
+  const res = await fetch(`${BASE_URL}/api/reverse/${jobId}`, {
+    method: 'POST',
+    headers: authHeaders(),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || 'Ters çevirme başarısız.');
+  return data;
+}
+
+export async function analyzeVideo(jobId) {
+  const res = await fetch(`${BASE_URL}/api/analyze/${jobId}`, {
+    method: 'POST',
+    headers: authHeaders(),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || 'Analiz başarısız');
+  return data;
+}
+
+export async function addMusic(jobId, { mood, start_time = 0, end_time = null, volume = 0.22 } = {}, plan = 'pro') {
+  const res = await fetch(`${BASE_URL}/api/music/${jobId}`, {
+    method: 'POST',
+    headers: authHeaders({ 'Content-Type': 'application/json', 'X-User-Plan': plan }),
     body: JSON.stringify({ mood, start_time, end_time, volume }),
   });
   const data = await res.json();

@@ -1,103 +1,106 @@
 /**
  * Clipla-Y — Ana uygulama
- * Wizard orchestration: Upload → Chat → Preview → Download
+ * Auth state + WorkspaceScreen
  */
 
-import { StatusBar } from 'expo-status-bar';
-import { useState, lazy, Suspense } from 'react';
-import { StyleSheet, View, TouchableOpacity, Text, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useState, useEffect, Component } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
+import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { StepBar }   from './components/StepBar';
-import { StepUpload } from './components/StepUpload'; // adım 0: hemen gerekli
-import { C }          from './shared/theme';
-import { Badge }      from './components/Badge';
-import { ProBadge }   from './components/ProBadge';
-import { usePlan }    from './hooks/usePlan';
+import { WorkspaceScreen } from './screens/WorkspaceScreen';
+import { AuthScreen }      from './screens/AuthScreen';
+import { PaywallModal }    from './components/PaywallModal';
+import { Badge }           from './components/Badge';
+import { ProBadge }        from './components/ProBadge';
+import { usePlan }         from './hooks/usePlan';
+import { C }               from './shared/theme';
+import { getSession, onAuthStateChange, signOut, DEV_MODE } from './shared/supabase';
 
-// Lazy load: ilk ekranda görünmeyenler — bundle split
-const StepChat     = lazy(() => import('./components/StepChat').then(m => ({ default: m.StepChat })));
-const StepPreview  = lazy(() => import('./components/StepPreview').then(m => ({ default: m.StepPreview })));
-const StepDownload = lazy(() => import('./components/StepDownload').then(m => ({ default: m.StepDownload })));
-const PaywallModal = lazy(() => import('./components/PaywallModal').then(m => ({ default: m.PaywallModal })));
+const RootView = SafeAreaView;
 
-function LazyFallback() {
-  return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-      <ActivityIndicator color={C.accent} size="large"/>
-    </View>
-  );
+class ErrorBoundary extends Component {
+  constructor(props) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(e) { return { error: e }; }
+  render() {
+    if (this.state.error) {
+      return (
+        <ScrollView style={{ flex: 1, backgroundColor: C.bg, padding: 20 }}>
+          <Text style={{ color: C.red, fontSize: 16, fontWeight: '700', marginBottom: 12 }}>Hata oluştu</Text>
+          <Text style={{ color: '#fca5a5', fontSize: 13, marginBottom: 8 }}>{this.state.error?.message}</Text>
+          <Text style={{ color: C.dim, fontSize: 11 }}>{this.state.error?.stack}</Text>
+          <TouchableOpacity
+            style={{ marginTop: 20, backgroundColor: C.green, borderRadius: 8, padding: 12, alignItems: 'center' }}
+            onPress={() => this.setState({ error: null })}>
+            <Text style={{ color: '#041a0d', fontWeight: '600' }}>Tekrar Dene</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      );
+    }
+    return this.props.children;
+  }
 }
 
-export default function App() {
-  const [step, setStep]       = useState(0);
-  const [jobData, setJobData] = useState(null);
-  const [result, setResult]   = useState(null);
+function AppInner() {
+  const [session, setSession]           = useState(undefined);
   const [paywallVisible, setPaywallVisible] = useState(false);
   const [paywallReason, setPaywallReason]   = useState('effects');
 
-  const planCtx = usePlan();
+  const planCtx = usePlan(session?.user?.id);
 
-  function restart() { setStep(0); setJobData(null); setResult(null); }
-  function goBack()  { if (step > 0) setStep(s => s - 1); }
+  useEffect(() => {
+    if (DEV_MODE) { setSession(null); return; }
+    getSession().then(({ data }) => setSession(data.session ?? null));
+    const { data: { subscription } } = onAuthStateChange((_, s) => setSession(s ?? null));
+    return () => subscription.unsubscribe();
+  }, []);
 
   function showPaywall(reason = 'effects') {
     setPaywallReason(reason);
     setPaywallVisible(true);
   }
 
-  return (
-    <SafeAreaView style={s.safe}>
-      <StatusBar style="light"/>
-      <View style={s.header}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          {step > 0 && (
-            <TouchableOpacity onPress={goBack} style={s.backBtn}>
-              <Text style={s.backBtnTxt}>←</Text>
-            </TouchableOpacity>
-          )}
-          <Text style={s.headerLogo}>Clipla-Y</Text>
+  // Yükleniyor
+  if (session === undefined) {
+    return (
+      <RootView style={s.safe}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={s.logo}>Clipla-Y</Text>
+          <ActivityIndicator color={C.accent} style={{ marginTop: 20 }}/>
         </View>
+      </RootView>
+    );
+  }
+
+  // Auth ekranı
+  if (!session && !DEV_MODE) {
+    return (
+      <RootView style={s.safe}>
+        <AuthScreen onAuth={setSession}/>
+      </RootView>
+    );
+  }
+
+  return (
+    <RootView style={s.safe}>
+      {/* ── Header ── */}
+      <View style={s.header}>
+        <Text style={s.logo}>Clipla-Y</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <ProBadge plan={planCtx.plan} onPress={() => showPaywall('effects')}/>
           <Badge label="BETA"/>
+          <TouchableOpacity onPress={() => signOut()} style={s.iconBtn}>
+            <Text style={s.iconBtnTxt}>çıkış</Text>
+          </TouchableOpacity>
         </View>
       </View>
-      <StepBar step={step}/>
-      <Suspense fallback={<LazyFallback/>}>
-        <View style={{ flex: 1 }}>
-          {step === 0 && (
-            <StepUpload
-              planCtx={planCtx}
-              onPaywall={() => showPaywall('upload_limit')}
-              onDone={d => { setJobData(d); setStep(1); }}
-            />
-          )}
-          {step === 1 && jobData && (
-            <StepChat
-              jobData={jobData}
-              planCtx={planCtx}
-              onPaywall={showPaywall}
-              onDone={r => { setResult(r); setStep(2); }}
-              onEffectApplied={data => setResult(prev =>
-                prev ? { ...prev, download_url: data.download_url, output_url: data.output_url } : prev
-              )}
-            />
-          )}
-          {step === 2 && result  && (
-            <StepPreview
-              result={result}
-              jobId={jobData?.jobId}
-              originalFile={jobData?.file}
-              planCtx={planCtx}
-              onPaywall={showPaywall}
-              onDone={() => setStep(3)}
-              onUpdateResult={setResult}
-            />
-          )}
-          {step === 3 && result  && <StepDownload result={result} onRestart={restart}/>}
-        </View>
 
+      {/* ── Workspace ── */}
+      <ErrorBoundary>
+        <WorkspaceScreen
+          session={session}
+          planCtx={planCtx}
+          onPaywall={showPaywall}
+        />
         {paywallVisible && (
           <PaywallModal
             visible={paywallVisible}
@@ -106,15 +109,26 @@ export default function App() {
             onClose={() => setPaywallVisible(false)}
           />
         )}
-      </Suspense>
-    </SafeAreaView>
+      </ErrorBoundary>
+    </RootView>
+  );
+}
+
+export default function App() {
+  return (
+    <SafeAreaProvider>
+      <AppInner />
+    </SafeAreaProvider>
   );
 }
 
 const s = StyleSheet.create({
   safe:       { flex: 1, backgroundColor: C.bg },
-  header:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4 },
-  headerLogo: { fontSize: 22, color: C.txt, fontStyle: 'italic' },
-  backBtn:    { width: 32, height: 32, borderRadius: 8, borderWidth: 1, borderColor: C.border, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' },
-  backBtnTxt: { color: C.dim, fontSize: 16 },
+  header:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+                paddingHorizontal: 18, paddingTop: 8, paddingBottom: 8,
+                backgroundColor: C.bg, borderBottomWidth: 1, borderColor: C.border },
+  logo:       { fontSize: 18, color: C.txt, fontStyle: 'italic', fontWeight: '800', letterSpacing: 0.5 },
+  iconBtn:    { height: 28, paddingHorizontal: 10, borderRadius: 7, borderWidth: 1,
+                borderColor: C.border, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' },
+  iconBtnTxt: { color: C.dim, fontSize: 11 },
 });

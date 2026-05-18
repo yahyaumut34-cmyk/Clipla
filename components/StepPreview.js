@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, memo, useRef } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, ActivityIndicator, FlatList } from 'react-native';
-import { generateSubtitles, toAbsoluteUrl, bustCache, applyEffect, addSoundEffect, addMusic } from '../api';
+import { StyleSheet, Text, View, TouchableOpacity, Pressable, ScrollView, ActivityIndicator, FlatList } from 'react-native';
+import { generateSubtitles, toAbsoluteUrl, bustCache, applyEffect, addSoundEffect, addMusic, beatSync, removeBackground, enhanceAudio } from '../api';
 import { useMicrophone } from '../hooks/useMicrophone';
 import { useTTS } from '../hooks/useTTS';
 import { useEffectIntent } from '../hooks/useEffectIntent';
@@ -75,7 +75,7 @@ const ViralityCard = memo(function ViralityCard({ scores, analysis, editPlan }) 
   );
 });
 
-export function StepPreview({ result, jobId: jobIdProp, originalFile, onDone, onUpdateResult }) {
+export function StepPreview({ result, jobId: jobIdProp, originalFile, onDone, onUpdateResult, planCtx, onPaywall }) {
   const dur      = result.duration || {};
   const scores   = result.scores || {};
   const analysis = result.claude_analysis || {};
@@ -93,6 +93,14 @@ export function StepPreview({ result, jobId: jobIdProp, originalFile, onDone, on
     result.autoSubtitleApplied ? toAbsoluteUrl(result.download_url || '') : ''
   );
   const [subLang, setSubLang] = useState(result.suggestedSubtitleLang || 'tr');
+
+  const [captionStyle, setCaptionStyle] = useState('bold');
+  const [beatSyncLoading, setBeatSyncLoading]         = useState(false);
+  const [bgRemoveLoading, setBgRemoveLoading]         = useState(false);
+  const [audioEnhanceLoading, setAudioEnhanceLoading] = useState(false);
+  const [bgMode, setBgMode]           = useState('chromakey');
+  const [chromaColor, setChromaColor] = useState('green');
+  const [bgColor, setBgColor]         = useState('#000000');
 
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const onTranscriptRef = useRef(null);
@@ -194,6 +202,7 @@ export function StepPreview({ result, jobId: jobIdProp, originalFile, onDone, on
 
   async function applySfx(sfxType, timestamp) {
     if (!jobId) { setSubStatus('Hata: Job ID bulunamadı'); return; }
+    if (!planCtx?.isPro) { onPaywall?.('effects'); return; }
     setSoundLoading(true);
     const sfxLabels = { laugh: 'Kahkaha', applause: 'Alkış', airhorn: 'Düdük', whoosh: 'Geçiş Sesi',
       sad_trombone: 'Üzgün Trompet', drum_hit: 'Davul', bell: 'Zil', pop: 'Pop',
@@ -202,7 +211,7 @@ export function StepPreview({ result, jobId: jobIdProp, originalFile, onDone, on
     const tsText = timestamp != null ? ` (${timestamp}s)` : '';
     setSubStatus(`${label} ekleniyor...${tsText}`);
     try {
-      const data = await addSoundEffect(jobId, { sfx_type: sfxType, timestamp, volume: 0.85 });
+      const data = await addSoundEffect(jobId, { sfx_type: sfxType, timestamp, volume: 0.85 }, planCtx?.plan ?? 'free');
       if (data?.download_url) {
         const url = toAbsoluteUrl(data.download_url);
         setSubVideoUrl(url);
@@ -221,12 +230,13 @@ export function StepPreview({ result, jobId: jobIdProp, originalFile, onDone, on
 
   async function applyBgMusic(mood, startTime, endTime) {
     if (!jobId) { setSubStatus('Hata: Job ID bulunamadı'); return; }
+    if (!planCtx?.isPro) { onPaywall?.('effects'); return; }
     setSoundLoading(true);
     const moodLabels = { calm: 'Sakin', energetic: 'Enerjik', minimal: 'Minimal', rhythmic: 'Ritmik', slow: 'Yavaş' };
     const label = moodLabels[mood] || mood;
     setSubStatus(`${label} müzik ekleniyor...`);
     try {
-      const data = await addMusic(jobId, { mood, start_time: startTime, end_time: endTime, volume: 0.22 });
+      const data = await addMusic(jobId, { mood, start_time: startTime, end_time: endTime, volume: 0.22 }, planCtx?.plan ?? 'free');
       if (data?.download_url) {
         const url = toAbsoluteUrl(data.download_url);
         setSubVideoUrl(url);
@@ -285,11 +295,12 @@ export function StepPreview({ result, jobId: jobIdProp, originalFile, onDone, on
       setSubStatus('Hata: Job ID bulunamadı');
       return;
     }
+    if (!planCtx?.isPro) { onPaywall?.('effects'); return; }
     setSubLoading(true);
     const timingText = timestamp != null ? ` ${timestamp}s.` : '';
     setSubStatus(`${intent.label} uygulanıyor...${timingText}`);
     try {
-      const data = await applyEffect(jobId, { category: intent.category, intensity: intent.intensity, timestamp });
+      const data = await applyEffect(jobId, { category: intent.category, intensity: intent.intensity, timestamp }, planCtx?.plan ?? 'free');
       if (data?.download_url) {
         const url = toAbsoluteUrl(data.download_url);
         setSubVideoUrl(url);
@@ -346,6 +357,56 @@ export function StepPreview({ result, jobId: jobIdProp, originalFile, onDone, on
       }
     }
 
+    // ── Beat Sync ─────────────────────────────────────────
+    if (/\b(beat.sync|müziğe.eşitle|ritme.göre|ritme.eşitle|beat.eşitle|beat)\b/i.test(trimmed)) {
+      addTranscriptMessage('user', trimmed);
+      const effect = /flash/i.test(trimmed) ? 'flash' : /zoom/i.test(trimmed) ? 'zoom' : 'pulse';
+      applyBeatSync(effect);
+      return;
+    }
+
+    // ── Background Removal ────────────────────────────────
+    if (/\b(arka.plan[ıi].kaldır|yeşil.ekran|green.screen|bg.remove|arkaplan.kaldır|arka.planı.sil)\b/i.test(trimmed)) {
+      addTranscriptMessage('user', trimmed);
+      const mode = /ai|yapay/i.test(trimmed) ? 'ai' : 'chromakey';
+      applyBgRemove(mode);
+      return;
+    }
+
+    // ── Audio Enhancement ─────────────────────────────────
+    if (/\b(sesi.iyileştir|gürültüyü.temizle|ses.kalitesi|noise.reduction|ses.iyileştir|sesi.güçlendir|konuşma.güçlendir|podcast)\b/i.test(trimmed)) {
+      addTranscriptMessage('user', trimmed);
+      let profile = 'clean';
+      if (/güçlendir|konuşma/i.test(trimmed)) profile = 'voice_boost';
+      else if (/podcast/i.test(trimmed)) profile = 'podcast';
+      else if (/sadece.gürültü|denoise/i.test(trimmed)) profile = 'denoise_only';
+      else if (/güçlü.ses|yüksek.ses|loud/i.test(trimmed)) profile = 'loud';
+      applyAudioEnhance(profile);
+      return;
+    }
+
+    // ── Caption Style Voice Commands ──────────────────────
+    if (/\b(neon.altyazı|neon.subtitle|mavi.altyazı|cyan)\b/i.test(trimmed)) {
+      setCaptionStyle('neon');
+      speak('Neon stili seçildi', () => voiceEnabled && startMic());
+      return;
+    }
+    if (/\b(tiktok.stil|tiktok.altyazı|sarı.büyük|sarı.altyazı)\b/i.test(trimmed)) {
+      setCaptionStyle('tiktok');
+      speak('TikTok stili seçildi', () => voiceEnabled && startMic());
+      return;
+    }
+    if (/\b(sinema.altyazı|sinematik|film.stili)\b/i.test(trimmed)) {
+      setCaptionStyle('cinematic');
+      speak('Sinematik stil seçildi', () => voiceEnabled && startMic());
+      return;
+    }
+    if (/\b(minimal.altyazı|sade.altyazı|küçük.altyazı)\b/i.test(trimmed)) {
+      setCaptionStyle('minimal');
+      speak('Minimal stil seçildi', () => voiceEnabled && startMic());
+      return;
+    }
+
     if (/\b(yeniden|tekrar|düzelt|geliştir|değiştir|daha kısa|daha uzun|daha komik|daha eğlenceli)\b/i.test(trimmed)) {
       speak('Bu isteği uygulamak için lütfen önce Chat ekranına geri dönün.');
       return;
@@ -360,15 +421,89 @@ export function StepPreview({ result, jobId: jobIdProp, originalFile, onDone, on
 
   onTranscriptRef.current = handleTranscript;
 
-  // handleGenerateSubtitles stable referans
-  const handleGenerateSubtitles = useCallback(async (lang) => {
+  async function applyBeatSync(effect = 'pulse') {
+    if (!jobId) { setSubStatus('Hata: Job ID bulunamadı'); return; }
+    if (!planCtx?.isPro) { onPaywall?.('effects'); return; }
+    setBeatSyncLoading(true);
+    setSubStatus('Beat tespiti yapılıyor...');
+    try {
+      const data = await beatSync(jobId, { effect, sensitivity: 0.7 }, planCtx?.plan ?? 'free');
+      if (data?.download_url) {
+        const url = toAbsoluteUrl(data.download_url);
+        setSubVideoUrl(url);
+        setSubStatus(`✓ Beat Sync uygulandı (${data.beat_count} beat, efekt: ${effect})`);
+        onUpdateResult?.({ ...result, download_url: url, output_url: url });
+        speak(`Beat sync hazır, ${data.beat_count} beat bulundu.`, () => voiceEnabled && startMic());
+      }
+    } catch(e) {
+      setSubStatus('Beat Sync hatası: ' + e.message);
+      speak('Beat sync uygulanamadı', () => voiceEnabled && startMic());
+    } finally {
+      setBeatSyncLoading(false);
+    }
+  }
+
+  async function applyBgRemove(mode = bgMode) {
+    if (!jobId) { setSubStatus('Hata: Job ID bulunamadı'); return; }
+    if (!planCtx?.isPro) { onPaywall?.('effects'); return; }
+    setBgRemoveLoading(true);
+    const modeLabel = mode === 'ai' ? 'AI arka plan kaldırma' : 'Yeşil ekran kaldırma';
+    setSubStatus(`${modeLabel} uygulanıyor${mode === 'ai' ? ' (yavaş, lütfen bekleyin)' : ''}...`);
+    try {
+      const data = await removeBackground(jobId, {
+        mode,
+        chromaColor,
+        bgColor,
+        fpsLimit: 6,
+      }, planCtx?.plan ?? 'free');
+      if (data?.download_url) {
+        const url = toAbsoluteUrl(data.download_url);
+        setSubVideoUrl(url);
+        setSubStatus(`✓ ${modeLabel} tamamlandı`);
+        onUpdateResult?.({ ...result, download_url: url, output_url: url });
+        speak('Arka plan kaldırıldı.', () => voiceEnabled && startMic());
+      }
+    } catch(e) {
+      setSubStatus('Arka plan kaldırma hatası: ' + e.message);
+      speak('Arka plan kaldırılamadı', () => voiceEnabled && startMic());
+    } finally {
+      setBgRemoveLoading(false);
+    }
+  }
+
+  async function applyAudioEnhance(profile = 'clean') {
+    if (!jobId) { setSubStatus('Hata: Job ID bulunamadı'); return; }
+    setAudioEnhanceLoading(true);
+    const profileLabels = {
+      clean: 'Temiz Ses', voice_boost: 'Konuşma Güçlendir',
+      loud: 'Ses Güçlü', denoise_only: 'Gürültü Temizle', podcast: 'Podcast',
+    };
+    setSubStatus(`${profileLabels[profile] || profile} uygulanıyor...`);
+    try {
+      const data = await enhanceAudio(jobId, { profile }, planCtx?.plan ?? 'free');
+      if (data?.download_url) {
+        const url = toAbsoluteUrl(data.download_url);
+        setSubVideoUrl(url);
+        setSubStatus(`✓ ${data.profile_label || profileLabels[profile]} uygulandı`);
+        onUpdateResult?.({ ...result, download_url: url, output_url: url });
+        speak('Ses iyileştirildi.', () => voiceEnabled && startMic());
+      }
+    } catch(e) {
+      setSubStatus('Ses iyileştirme hatası: ' + e.message);
+      speak('Ses iyileştirilemedi', () => voiceEnabled && startMic());
+    } finally {
+      setAudioEnhanceLoading(false);
+    }
+  }
+
+  const handleGenerateSubtitles = useCallback(async (lang, style) => {
     if (!jobId) {
       setSubStatus('Hata: Job ID bulunamadı, sayfayı yenile.');
       return;
     }
     setSubLoading(true); setSubStatus(''); setSubVideoUrl('');
     try {
-      const data = await generateSubtitles(jobId, { language: lang });
+      const data = await generateSubtitles(jobId, { language: lang, style: style || captionStyle });
       if (data.video_url) {
         const url = toAbsoluteUrl(data.video_url);
         setSubVideoUrl(url);
@@ -388,7 +523,7 @@ export function StepPreview({ result, jobId: jobIdProp, originalFile, onDone, on
     } finally {
       setSubLoading(false);
     }
-  }, [jobId]);
+  }, [jobId, captionStyle]);
 
   const displayVideoUrl = subVideoUrl || videoUrl;
 
@@ -438,21 +573,21 @@ export function StepPreview({ result, jobId: jobIdProp, originalFile, onDone, on
       <View style={[s.metricsCard, { marginBottom: 12 }]}> 
         <Text style={s.sectionLabel}>SESLE KOMUT</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-          <TouchableOpacity
-            style={[s.btn, { flex: 1, backgroundColor: voiceEnabled ? 'rgba(29,185,116,0.15)' : C.card }]}
-            onPress={() => {
-              const next = !voiceEnabled;
-              setVoiceEnabled(next);
-              if (next) startMic();
-              else {
-                cancelTTS();
-                if (listening) stopMicAndSend();
-              }
-            }}>
-            <Text style={[s.btnTxt, { color: voiceEnabled ? C.green : C.accent }]}>🔊 Sesli Komut {voiceEnabled ? 'Açık' : 'Kapalı'}</Text>
-          </TouchableOpacity>
+          <Pressable
+            style={[s.btn, { flex: 1, backgroundColor: listening ? 'rgba(29,185,116,0.2)' : C.card,
+              borderWidth: 1, borderColor: listening ? C.green : C.border }]}
+            onPressIn={() => { if (!speaking) startMic(); setVoiceEnabled(true); }}
+            onPressOut={() => { if (listening) stopMicAndSend(); }}
+            onLongPress={() => {}}
+            delayLongPress={300}>
+            <Text style={[s.btnTxt, { color: listening ? C.green : C.accent }]}>
+              {listening ? '⏹ Bırak → Gönder' : '🎤 Bas ve Konuş'}
+            </Text>
+          </Pressable>
           <View style={{ flex: 1, minHeight: 32, justifyContent: 'center' }}>
-            <Text style={{ fontSize: 12, color: C.muted }}>{listening ? interim || 'Dinliyorum...' : 'Komut için açın'}</Text>
+            <Text style={{ fontSize: 12, color: listening ? C.green : C.muted }}>
+              {listening ? interim || 'Dinliyorum...' : 'Basılı tut, konuş, bırak'}
+            </Text>
           </View>
         </View>
         <Text style={{ fontSize: 11, color: C.muted, lineHeight: 18 }}>
@@ -533,8 +668,136 @@ export function StepPreview({ result, jobId: jobIdProp, originalFile, onDone, on
         )}
       </View>
 
+      {/* ── BEAT SYNC ── */}
+      <View style={[s.metricsCard, { marginBottom: 12 }]}>
+        <Text style={s.sectionLabel}>AUTO BEAT SYNC</Text>
+        <Text style={{ fontSize: 11, color: C.muted, marginBottom: 10, lineHeight: 17 }}>
+          Video sesindeki ritmi tespit ederek her beat'te görsel pulse efekti uygular.
+        </Text>
+        <View style={{ flexDirection: 'row', gap: 6, marginBottom: 10 }}>
+          {[
+            { id: 'pulse', label: '💥 Pulse' },
+            { id: 'flash', label: '⚡ Flash' },
+            { id: 'zoom',  label: '🔍 Zoom' },
+          ].map(({ id, label }) => (
+            <TouchableOpacity
+              key={id}
+              style={{ flex: 1, paddingVertical: 7, borderRadius: 8, borderWidth: 1,
+                borderColor: C.border, backgroundColor: C.card, alignItems: 'center' }}
+              disabled={beatSyncLoading}
+              onPress={() => applyBeatSync(id)}>
+              <Text style={{ fontSize: 11, color: C.txt }}>{label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        {beatSyncLoading && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <ActivityIndicator color={C.accent} size="small"/>
+            <Text style={{ fontSize: 12, color: C.muted }}>Beat analizi yapılıyor...</Text>
+          </View>
+        )}
+      </View>
+
+      {/* ── BACKGROUND REMOVAL ── */}
+      <View style={[s.metricsCard, { marginBottom: 12 }]}>
+        <Text style={s.sectionLabel}>ARKA PLAN KALDIRMA</Text>
+        <View style={{ flexDirection: 'row', gap: 6, marginBottom: 10 }}>
+          <TouchableOpacity
+            style={[s.modeBtn, bgMode === 'chromakey' && s.modeBtnOn]}
+            onPress={() => setBgMode('chromakey')}>
+            <Text style={{ fontSize: 11, color: bgMode === 'chromakey' ? C.accent : C.muted }}>🎬 Yeşil Ekran</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[s.modeBtn, bgMode === 'ai' && s.modeBtnOn]}
+            onPress={() => setBgMode('ai')}>
+            <Text style={{ fontSize: 11, color: bgMode === 'ai' ? C.accent : C.muted }}>🤖 AI Kaldır</Text>
+          </TouchableOpacity>
+        </View>
+        {bgMode === 'chromakey' && (
+          <View style={{ flexDirection: 'row', gap: 6, marginBottom: 10 }}>
+            {[['green','Yeşil','#00FF00'], ['blue','Mavi','#0000FF'], ['white','Beyaz','#FFFFFF']].map(([id, label, color]) => (
+              <TouchableOpacity key={id}
+                style={{ flex: 1, paddingVertical: 6, borderRadius: 8, borderWidth: 1,
+                  borderColor: chromaColor === id ? C.accent : C.border,
+                  backgroundColor: chromaColor === id ? 'rgba(224,92,42,0.12)' : C.card,
+                  flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 }}
+                onPress={() => setChromaColor(id)}>
+                <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: color, borderWidth: 1, borderColor: C.border }}/>
+                <Text style={{ fontSize: 10, color: chromaColor === id ? C.accent : C.muted }}>{label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+        {bgMode === 'ai' && (
+          <Text style={{ fontSize: 10, color: C.warn, marginBottom: 8, lineHeight: 15 }}>
+            ⚠ AI modu video uzunluğuna göre 1-5 dakika sürebilir.
+          </Text>
+        )}
+        <TouchableOpacity
+          style={[s.btn, bgRemoveLoading && s.btnDisabled]}
+          disabled={bgRemoveLoading}
+          onPress={() => applyBgRemove(bgMode)}>
+          {bgRemoveLoading
+            ? <ActivityIndicator color={C.accent}/>
+            : <Text style={[s.btnTxt, { color: C.accent }]}>Arka Planı Kaldır</Text>}
+        </TouchableOpacity>
+      </View>
+
+      {/* ── AUDIO ENHANCEMENT ── */}
+      <View style={[s.metricsCard, { marginBottom: 12 }]}>
+        <Text style={s.sectionLabel}>SES İYİLEŞTİRME</Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+          {[
+            { id: 'clean',       label: '✨ Temizle',      desc: 'Gürültü + normalize' },
+            { id: 'voice_boost', label: '🎙 Konuşma',      desc: 'Ses frekans güçlendir' },
+            { id: 'denoise_only',label: '🔇 Sessizleştir', desc: 'Sadece arka gürültü' },
+            { id: 'podcast',     label: '🎧 Podcast',      desc: 'Yayın kalitesi' },
+            { id: 'loud',        label: '📢 Güçlü',        desc: 'Maksimum ses' },
+          ].map(({ id, label, desc }) => (
+            <TouchableOpacity key={id}
+              disabled={audioEnhanceLoading}
+              style={{ paddingHorizontal: 10, paddingVertical: 7, borderRadius: 8,
+                borderWidth: 1, borderColor: C.border, backgroundColor: C.card,
+                opacity: audioEnhanceLoading ? 0.4 : 1, minWidth: 80 }}
+              onPress={() => applyAudioEnhance(id)}>
+              <Text style={{ fontSize: 11, color: C.txt }}>{label}</Text>
+              <Text style={{ fontSize: 9, color: C.muted, marginTop: 2 }}>{desc}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        {audioEnhanceLoading && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <ActivityIndicator color={C.accent} size="small"/>
+            <Text style={{ fontSize: 12, color: C.muted }}>Ses işleniyor...</Text>
+          </View>
+        )}
+      </View>
+
       <View style={s.metricsCard}>
         <Text style={s.sectionLabel}>ALTYAZI EKLE</Text>
+
+        {/* Caption Style Picker */}
+        <Text style={{ fontSize: 9, color: C.muted, letterSpacing: 1, marginBottom: 8 }}>STİL</Text>
+        <View style={{ flexDirection: 'row', gap: 6, marginBottom: 14 }}>
+          {[
+            { id: 'bold',      label: 'Kalın',   preview: { color: '#fff', fontWeight: '900', fontSize: 13 } },
+            { id: 'neon',      label: 'Neon',    preview: { color: '#00FFFF', fontWeight: '700', fontSize: 12 } },
+            { id: 'minimal',   label: 'Minimal', preview: { color: '#fff', fontSize: 11 } },
+            { id: 'cinematic', label: 'Sinema',  preview: { color: '#fff', fontSize: 11, backgroundColor: 'rgba(0,0,0,0.7)', paddingHorizontal: 3 } },
+            { id: 'tiktok',    label: 'TikTok',  preview: { color: '#FFFF00', fontWeight: '900', fontSize: 14 } },
+          ].map(({ id, label, preview }) => (
+            <TouchableOpacity key={id}
+              style={{ flex: 1, minWidth: 52, paddingVertical: 8, borderRadius: 8, borderWidth: 1,
+                borderColor: captionStyle === id ? C.accent : C.border,
+                backgroundColor: captionStyle === id ? 'rgba(224,92,42,0.12)' : C.card,
+                alignItems: 'center' }}
+              onPress={() => setCaptionStyle(id)}>
+              <Text style={[preview, { marginBottom: 3 }]}>Aa</Text>
+              <Text style={{ fontSize: 9, color: captionStyle === id ? C.accent : C.muted }}>{label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
         <FlatList
           data={subLangsList}
           horizontal
@@ -626,8 +889,10 @@ const s = StyleSheet.create({
   analysisBox:    { backgroundColor: 'rgba(224,92,42,0.06)', borderWidth: 1, borderColor: 'rgba(224,92,42,0.2)', borderRadius: 12, padding: 16, marginBottom: 20 },
   analysisTxt:    { fontSize: 13, color: C.txt, lineHeight: 20, marginBottom: 10 },
   suggestion:     { fontSize: 12, color: C.dim, lineHeight: 20, marginBottom: 4 },
-  btn:            { borderWidth: 1, borderColor: C.border, borderRadius: 10, padding: 14, alignItems: 'center', backgroundColor: C.card },
-  btnGreen:       { backgroundColor: C.green, borderColor: C.green },
-  btnDisabled:    { opacity: 0.3 },
-  btnTxt:         { color: '#fff', fontSize: 14, letterSpacing: 0.5, fontWeight: '500' },
+  btn:       { borderWidth: 1, borderColor: C.border, borderRadius: 10, padding: 14, alignItems: 'center', backgroundColor: C.card },
+  btnGreen:  { backgroundColor: C.green, borderColor: C.green },
+  btnDisabled: { opacity: 0.3 },
+  btnTxt:    { color: '#fff', fontSize: 14, letterSpacing: 0.5, fontWeight: '500' },
+  modeBtn:   { flex: 1, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: C.border, backgroundColor: C.card, alignItems: 'center' },
+  modeBtnOn: { borderColor: C.accent, backgroundColor: 'rgba(224,92,42,0.12)' },
 });

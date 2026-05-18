@@ -12,8 +12,10 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { autoEdit, getAutoEditStatus, generateSubtitles, toAbsoluteUrl } from '../api';
 import { useTTS } from './useTTS';
 
-const POLL_INTERVAL_MS = 4000; // 2.5s → 4s: backend yükünü azaltır
-const TIMEOUT_MS       = 5 * 60 * 1000; // 5 dakika
+const POLL_INTERVAL_MS  = 4000;          // temel polling aralığı
+const POLL_JITTER_MS    = 800;           // thundering herd'ü önlemek için rastgele ±jitter
+const TIMEOUT_MS        = 5 * 60 * 1000; // 5 dakika
+const SUBTITLE_TIMEOUT  = 60 * 1000;     // altyazı için 60s ayrı timeout
 
 const STATUS_LABELS = {
   pending:    'Sıraya alındı...',
@@ -87,6 +89,7 @@ export function useEditPolling({ jobId, onDone, onError }) {
       // Async: polling başlat
       setEditProgress(formatProgress(initialData));
 
+      const jitter = Math.round((Math.random() - 0.5) * POLL_JITTER_MS);
       pollRef.current = setInterval(async () => {
         // Timeout kontrolü
         if (Date.now() - startedAt.current > TIMEOUT_MS) {
@@ -136,7 +139,7 @@ export function useEditPolling({ jobId, onDone, onError }) {
         } finally {
           pollActiveRef.current = false;
         }
-      }, POLL_INTERVAL_MS);
+      }, POLL_INTERVAL_MS + jitter);
 
     } catch(e) {
       stopPolling();
@@ -151,9 +154,13 @@ export function useEditPolling({ jobId, onDone, onError }) {
 
     if (subtitleLang) {
       try {
-        const subData = await generateSubtitles(jobId, { language: subtitleLang });
+        const subData = await Promise.race([
+          generateSubtitles(jobId, { language: subtitleLang }),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Altyazı zaman aşımı')), SUBTITLE_TIMEOUT)
+          ),
+        ]);
         if (subData?.video_url) {
-          // toAbsoluteUrl ile normalize et — string replace'e gerek yok
           const absUrl = toAbsoluteUrl(subData.video_url);
           finalResult = {
             ...finalResult,
@@ -164,7 +171,7 @@ export function useEditPolling({ jobId, onDone, onError }) {
           };
         }
       } catch(subErr) {
-        console.warn('[useEditPolling] subtitle error:', subErr);
+        console.warn('[useEditPolling] subtitle error:', subErr.message);
       }
     }
 

@@ -1,54 +1,73 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
-
-# dependencies
+# ── Dependencies ──────────────────────────────────────────────────────────────
 node_modules/
 
-# Expo
+# ── Expo / Metro ──────────────────────────────────────────────────────────────
 .expo/
 dist/
 web-build/
 expo-env.d.ts
+.metro-health-check*
 
-# Native
+# ── Generated native folders (Expo managed) ──────────────────────────────────
+/ios/
+/android/
 .kotlin/
-*.orig.*
+
+# ── EAS / Build artifacts ─────────────────────────────────────────────────────
+*.ipa
+*.aab
+*.apk
+
+# ── Environment & secrets ─────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Signing & credentials — NEVER commit ─────────────────────────────────────
 *.jks
+*.keystore
 *.p8
 *.p12
 *.key
 *.mobileprovision
+*.pem
+key.properties
+google-services.json
+google-service-account.json
+GoogleService-Info.plist
+credentials.json
 
-# Metro
-.metro-health-check*
+# ── Claude Code (local settings only; CLAUDE.md is source) ───────────────────
+.claude/settings.local.json
 
-# debug
+# ── Debug / logs ──────────────────────────────────────────────────────────────
 npm-debug.*
 yarn-debug.*
 yarn-error.*
+*.log
 
-# macOS
-.DS_Store
-*.pem
-
-# local env files
-.env
-.env.*
-.env*.local
-
-# Signing — ASLA commit'leme
-*.jks
-*.keystore
-google-service-account.json
-google-services.json
-GoogleService-Info.plist
-key.properties
-
-# EAS secrets
-credentials.json
-
-# typescript
+# ── TypeScript ────────────────────────────────────────────────────────────────
 *.tsbuildinfo
 
-# generated native folders
-/ios
-/android
+# ── macOS ─────────────────────────────────────────────────────────────────────
+.DS_Store
+__MACOSX/
+
+# ── Windows ───────────────────────────────────────────────────────────────────
+Thumbs.db
+Desktop.ini
+
+# ── Editor & IDE ──────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── Test / coverage ───────────────────────────────────────────────────────────
+coverage/
+.nyc_output/
+
+# ── Misc temp files ───────────────────────────────────────────────────────────
+*.orig.*
+*.tmp
+*.bak

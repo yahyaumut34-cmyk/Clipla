@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, ActivityIndicator, Linking } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, ActivityIndicator, Linking, Alert } from 'react-native';
 import * as Sharing from 'expo-sharing';
 import { toAbsoluteUrl } from '../api';
 import { C, IS_WEB } from '../shared/theme';
@@ -9,6 +9,13 @@ export function StepDownload({ result, onRestart }) {
   const dur      = result.duration || {};
   const videoUrl = toAbsoluteUrl(result.download_url || result.output_url || '');
   const [sharing, setSharing] = useState(false);
+
+  function handleRestart() {
+    Alert.alert('Yeni Video', 'Mevcut düzenleme kaybolacak. Emin misiniz?', [
+      { text: 'Vazgeç', style: 'cancel' },
+      { text: 'Evet, Başla', style: 'destructive', onPress: onRestart },
+    ]);
+  }
 
   function download() {
     if (IS_WEB && typeof document !== 'undefined') {
@@ -60,7 +67,7 @@ export function StepDownload({ result, onRestart }) {
             : <Text style={[s.btnTxt, { color: C.accent }]}>Paylaş</Text>}
         </TouchableOpacity>
       )}
-      <TouchableOpacity style={[s.btn, { width: '100%', marginTop: 10 }]} onPress={onRestart}>
+      <TouchableOpacity style={[s.btn, { width: '100%', marginTop: 10 }]} onPress={handleRestart}>
         <Text style={[s.btnTxt, { color: C.dim }]}>Yeni Video Yükle</Text>
       </TouchableOpacity>
     </ScrollView>

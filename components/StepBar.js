@@ -1,7 +1,10 @@
 import { View, Text, StyleSheet } from 'react-native';
 
-export function StepBar({ step }) {
-  const steps = ['Yükle', 'Konuş', 'Önizle', 'İndir'];
+const QUICK_STEPS    = ['Şablon', 'İşleniyor', 'İndir'];
+const ADVANCED_STEPS = ['Yükle', 'Konuş', 'Önizle', 'İndir'];
+
+export function StepBar({ step, mode = 'advanced' }) {
+  const steps = mode === 'quick' ? QUICK_STEPS : ADVANCED_STEPS;
   return (
     <View style={{ flexDirection: 'row', justifyContent: 'center', paddingVertical: 12 }}>
       {steps.map((s, i) => (

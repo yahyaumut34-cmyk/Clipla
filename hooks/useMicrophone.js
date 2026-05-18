@@ -16,6 +16,9 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { Platform } from 'react-native';
 import { transcribeAudio } from '../api';
+import { isStartCommand } from '../shared/constants';
+
+const SILENCE_MS = 5000; // 5s sessizlik → otomatik gönder
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -48,9 +51,11 @@ export function useMicrophone({ onTranscript, language = 'tr-TR' }) {
   const [sttMode, setSttMode]     = useState(null); // 'web' | 'on-device' | 'backend'
 
   // Web refs
-  const recRef       = useRef(null);
-  const listeningRef = useRef(false);
-  const accRef       = useRef('');
+  const recRef        = useRef(null);
+  const listeningRef  = useRef(false);
+  const accRef        = useRef('');
+  const interimRef    = useRef('');
+  const silenceTimer  = useRef(null);
 
   // Native refs
   const recordingRef     = useRef(null);     // expo-av recording
@@ -82,14 +87,46 @@ export function useMicrophone({ onTranscript, language = 'tr-TR' }) {
       }
       if (finals) {
         accRef.current = (accRef.current + ' ' + finals).trim();
+
+        // "başla" / "start" → hemen gönder, dinlemeyi bitir
+        if (isStartCommand(finals.trim())) {
+          clearTimeout(silenceTimer.current);
+          listeningRef.current = false;
+          setListening(false);
+          // "başla" kelimesini mesajdan çıkar, gerçek komut kısmını gönder
+          const text = accRef.current
+            .replace(/\b(başla|başlayabilirsin|start|go|tamam|evet|ok|devam|git)\b/gi, '')
+            .trim();
+          accRef.current = '';
+          interimRef.current = '';
+          setInterim('');
+          try { rec.stop(); } catch {}
+          if (text) onTranscript(text);
+          return;
+        }
+
+        // 5s sessizlik güvenlik tamponu → otomatik gönder
+        clearTimeout(silenceTimer.current);
+        silenceTimer.current = setTimeout(() => {
+          if (listeningRef.current) {
+            listeningRef.current = false;
+            setListening(false);
+            const text = (accRef.current + ' ' + interimRef.current).trim();
+            accRef.current = '';
+            interimRef.current = '';
+            setInterim('');
+            try { rec.stop(); } catch {}
+            if (text) onTranscript(text);
+          }
+        }, SILENCE_MS);
       }
+      interimRef.current = inter;
       setInterim(inter);
     };
 
     rec.onend = () => {
       if (listeningRef.current) {
         try { rec.start(); } catch {
-          // Tarayıcı throttle / InvalidStateError — dinlemeyi durdur
           listeningRef.current = false;
           setListening(false);
           setInterim('');
@@ -99,6 +136,7 @@ export function useMicrophone({ onTranscript, language = 'tr-TR' }) {
 
     rec.onerror = (e) => {
       if (e.error === 'no-speech') return;
+      clearTimeout(silenceTimer.current);
       listeningRef.current = false;
       setListening(false);
       setInterim('');
@@ -147,6 +185,7 @@ export function useMicrophone({ onTranscript, language = 'tr-TR' }) {
   function startMicWeb() {
     if (!recRef.current) return;
     accRef.current = '';
+    interimRef.current = '';
     setInterim('');
     listeningRef.current = true;
     setListening(true);
@@ -156,13 +195,15 @@ export function useMicrophone({ onTranscript, language = 'tr-TR' }) {
   // ── Web: stop and send ──
   function stopMicAndSendWeb() {
     if (!recRef.current) return;
+    clearTimeout(silenceTimer.current);
     listeningRef.current = false;
     setListening(false);
+    const combined = (accRef.current + ' ' + interimRef.current).trim();
+    accRef.current = '';
+    interimRef.current = '';
     setInterim('');
     try { recRef.current.stop(); } catch {}
-    const msg = accRef.current.trim();
-    accRef.current = '';
-    if (msg) setTimeout(() => onTranscript(msg), 150);
+    if (combined) setTimeout(() => onTranscript(combined), 150);
   }
 
   // ── Native on-device: expo-speech-recognition ──
@@ -201,10 +242,14 @@ export function useMicrophone({ onTranscript, language = 'tr-TR' }) {
         setInterim('');
         const text = accRef.current.trim();
         accRef.current = '';
-        if (text) onTranscript(text);
-        else {
-          // On-device gave nothing — fall back to backend once
-          console.warn('[useMicrophone] on-device gave empty result, fallback to backend');
+        if (text) {
+          onTranscript(text);
+        } else {
+          // On-device boş sonuç — backend'e düş
+          console.warn('[useMicrophone] on-device gave empty result, falling back to backend');
+          onDeviceAvailRef.current = false;
+          setSttMode('backend');
+          startMicBackend();
         }
       });
       const sub3 = ExpoSpeechRecognitionModule.addListener('error', (event) => {

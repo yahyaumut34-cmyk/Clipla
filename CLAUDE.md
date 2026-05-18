@@ -5,11 +5,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-# Start dev server (choose platform)
-npm start          # Expo dev server (prompts for platform)
+# Start dev server
+npm run web        # Web browser (http://localhost:8081)
 npm run android    # Android emulator
 npm run ios        # iOS simulator
-npm run web        # Web browser
+npm start          # Expo dev server (prompts for platform)
 
 # Build with EAS
 eas build --profile development
@@ -22,257 +22,212 @@ There is no lint or test setup — the project has no testing framework configur
 ### Backend Location & Running
 
 ```bash
-# Backend is separate React Native app: C:/Users/musta/Desktop/clipla/proje/backend/
+# Backend is a separate FastAPI app:
 cd C:/Users/musta/Desktop/clipla/proje/backend
-venv/Scripts/python.exe -m uvicorn main:app --host 127.0.0.1 --port 8000
+venv/Scripts/python.exe -m uvicorn main:app --host 127.0.0.1 --port 8000 --reload
 
-# Or for Android/iOS testing, change BASE_URL in api.js to 192.168.1.6 (local network IP)
+# For Android/iOS testing, change BASE_URL in api.js to the local network IP (e.g. 192.168.1.6)
 ```
 
 ## Architecture
 
-**Clipla** is an AI-powered video editing app built with Expo (React Native). The user uploads a video, has a voice/text conversation with an AI assistant to describe their edit, then the app sends the video to a backend for processing.
+**Clipla** is an AI-powered video editing app built with Expo (React Native). The user uploads a video, chats with an AI assistant via voice or text, and the backend processes the edit.
 
-### File structure
-
-```
-App.js                     ← wizard orchestration only (step state, navigation)
-api.js                     ← all backend API calls (root, platform-aware BASE_URL)
-shared/theme.js            ← C color palette + IS_WEB constant
-index.js                   ← entry point, SafeAreaProvider wrapper
-
-components/
-  StepBar.js               ← 4-step progress indicator
-  StepUpload.js            ← video file picker + upload with progress
-  StepChat.js              ← voice/text chat, edit confirmation, shorts tab
-  StepPreview.js           ← video preview, subtitle generation, metrics
-  StepDownload.js          ← download + native share (expo-sharing)
-  NativeVideoPlayer.js     ← expo-video wrapper (used across components)
-
-hooks/
-  useMicrophone.js         ← platform-agnostic mic: Web SpeechRecognition / Native expo-av + STT
-  useTTS.js                ← platform-agnostic TTS: Web speechSynthesis / Native expo-speech
-  useEditPolling.js        ← auto-edit starter with 2s status polling + subtitle generation
-```
-
-**Switch backend environment** in `api.js` — `BASE_URL` is `Platform.OS === 'web' ? 'http://127.0.0.1:8000' : 'http://192.168.1.6:8000'` by default.
-
-### Backend API (local: `http://127.0.0.1:8000`)
-
-| Endpoint | Purpose |
-|---|---|
-| `POST /api/video/upload` | Upload video file, returns `job_id` |
-| `POST /api/auto-edit/:jobId` | Run AI edit with `command_text`, `platform`, `target_duration_sec` |
-| `GET /api/auto-edit/:jobId/status` | Poll edit progress |
-| `POST /api/chat` | Chat turn with AI assistant, returns `reply`, `ready_to_edit`, `edit_params` (also extracts `platform` and `target_duration_sec` from message) |
-| `POST /api/effects/:jobId` | Apply FFmpeg-based visual effect (category, intensity) → returns new video URL |
-| `POST /api/shorts/:jobId` | Generate short clips with semantic analysis |
-| `POST /api/subtitles/:jobId` | Burn subtitles into video (auto-applies if language detected in chat) |
-| `POST /api/stt/transcribe` | Speech-to-text for voice input |
-
-### Voice Control System (Core Feature)
-
-The app uses a **voice interceptor pattern** in `StepChat.js`:
+### Screen Flow
 
 ```
-Microphone capture → onTranscript (stable callback via ref) → handleTranscript() → route to:
-├─ isConfirmWord("evet/tamam") → startEdit() (confirm edit plan)
-├─ isRejectWord("hayır/dur") → ask again (reject plan)
-├─ isApplyEffectCmd("uygula") + detectedEffect → handleEffectSelect()
-├─ isShortsCmd("shorts/kısa klip") → tab switch + generate
-└─ otherwise → sendMsg() (normal chat)
+App.js
+  ├─ session === undefined  → Loading spinner
+  ├─ !session && !DEV_MODE → AuthScreen  (Supabase email + GitHub OAuth)
+  └─ session || DEV_MODE   → WorkspaceScreen  (main app)
+                               └─ PaywallModal  (overlaid)
 ```
 
-**Key patterns:**
-- `onTranscriptRef.current` + `stableOnTranscript` callback: prevents mic re-initialization on state changes
-- `confirmDataRef`/`detectedEffectRef`: refs keep state accessible in voice callbacks
-- `handleTranscript()` updated every render via ref assignment
-- TTS appends "Onaylamak için 'evet' de." when edit plan ready
+`DEV_MODE` in `shared/supabase.js` bypasses auth entirely for local dev.
 
-**Files involved:**
-- `components/StepChat.js` — voice routing + confirmation UI
-- `hooks/useMicrophone.js` — STT chain (Web SpeechRecognition → Native on-device → backend Whisper)
-- `hooks/useTTS.js` — TTS with language support
-- `hooks/useEffectIntent.js` — intent detection (keywords → effect category)
+### WorkspaceScreen State Machine
 
-### Backend (FastAPI)
+`WorkspaceScreen` is the entire app in one file — it owns all state and orchestrates every sub-component.
 
-**Location:** `C:/Users/musta/Desktop/clipla/proje/backend/`
-
-**To run:**
-```bash
-cd C:/Users/musta/Desktop/clipla/proje/backend
-venv/Scripts/python.exe -m uvicorn main:app --host 127.0.0.1 --port 8000
+```
+'idle'
+  ↓ single video selected + uploaded
+'uploading'
+  ↓ upload done
+'ready'        ← VoiceCommandPanel visible here
+  ↓ handleConfirm()
+'processing'   ← useEditPolling polls /status every 4s
+  ↓ onDone callback
+'done'
+  ↓ handleRestart()
+'idle'
 ```
 
-**Structure:**
+Multi-video path: selecting 2–5 videos → `VideoMergeModal` opens → upload + `trimMerge` API → `jobData` set → state goes to `'ready'`.
+
+### Component Relationships
+
 ```
-main.py                    ← FastAPI app + major endpoints (chat, upload, auto-edit, effects, status)
-api/
-  video.py                 ← video upload handler
-  auto_edit.py             ← edit router
-  shorts.py                ← shorts generation
-  subtitles.py             ← subtitle burning
+WorkspaceScreen (state owner)
+├─ FloatingChat         — floating modal bottom-right; receives messages[], onSend, confirmData, editLoading
+├─ VideoMergeModal      — alttan süzülen modal; handles video ordering, trim inputs, transition picker, upload progress
+├─ VoiceCommandPanel    — collapsible panel in canvas (ready state); tappable command chips → onSend()
+├─ NativeVideoPlayer    — expo-video wrapper for done state preview
+└─ useMicrophone → handleTranscript → routes voice to:
+     isConfirmWord    → handleConfirm()
+     isRejectWord     → handleReject()
+     "uygula"         → handleApplyEffect()
+     isMergeUploadCmd → handleMergeUpload()
+     /geçiş .../      → setMergeSettings transition
+     isUndoCmd        → stub message
+     isPreviewCmd     → status message
+     else             → sendMsg() (AI chat)
 ```
 
-**Key backend features:**
-- Chat API extracts platform (tiktok/instagram/youtube_shorts) and duration from user messages
-- `/api/effects/{job_id}` applies FFmpeg filters per category (impact_shock, neon_glow, vintage_film, etc.)
-- Effect application returns new video URL → frontend updates preview
-- Auto-subtitle applied after edit if language detected in chat
-- Subtitle language detection: `detectSubtitleLang()` in constants.js checks chat history
+### Key State Refs (Voice System)
 
-### Platform differences
-
-`IS_WEB = Platform.OS === 'web'` gates all web-specific behavior:
-- **Web**: uses `<input type="file">` for picking, `SpeechRecognition` API for voice, `SpeechSynthesis` for TTS, native `<video>` element for preview.
-- **Native (iOS/Android)**: uses `expo-document-picker` for files, `expo-video` (`VideoView` + `useVideoPlayer`) for playback. No voice input on native.
-
-### UI conventions
-
-- Color palette is defined in the `C` object at the top of `App.js`.
-- All `StyleSheet` objects are defined inline near the component that uses them (except the global `s` and `stb` at the bottom of the file).
-- The UI is Turkish-language.
-
-### Pro/Plan System (Frontend-only, no backend enforcement yet)
-
-- **Files:** `hooks/usePlan.js`, `components/PaywallModal.js`, `components/ProBadge.js`
-- **Tracking:** AsyncStorage + daily upload counter
-- **Features gated:** effects, shorts, advanced subtitles, unlimited uploads
-- **Current state:** Local-only (easily circumvented) — backend doesn't validate yet
-- **Gotcha:** `usePlan.upgrade()` is simulated (just sets local state to 'pro')
-
-### Edit flow
-
-1. User uploads video → backend returns `job_id`.
-2. `StepChat`: user types or speaks commands. Each message hits `/api/chat`. When the AI signals `ready_to_edit: true` with `edit_params`, a confirmation card appears.
-3. User says "evet" via voice OR clicks "Evet, Başla" button → `startEdit()` triggers `/api/auto-edit/:jobId`.
-4. `useEditPolling` polls `/api/auto-edit/{jobId}/status` every 4s until done.
-5. If subtitle language detected in chat, `/api/subtitles/{jobId}` burns it automatically.
-6. `StepPreview`: shows final video with quality scores.
-7. `StepDownload`: MP4 download + native share.
-
----
-
-## Architectural Patterns
-
-### Ref-based Stable Callbacks (Voice System)
-
-When `useMicrophone.onTranscript` is called, the callback must access latest state (confirmData, detectedEffect) without triggering mic re-init:
+WorkspaceScreen uses the same ref-based stable callback pattern as the original StepChat:
 
 ```javascript
-// Refs hold state snapshot for voice callbacks
-const confirmDataRef = useRef(null);
+const confirmDataRef    = useRef(null);
 const detectedEffectRef = useRef(null);
-const onTranscriptRef = useRef(null);
+const onTranscriptRef   = useRef(null);
 
-// Keep refs synced
-useEffect(() => { confirmDataRef.current = confirmData; }, [confirmData]);
+// Stable callback passed to useMicrophone — never changes identity
+const stableOnTranscript = useCallback(t => onTranscriptRef.current?.(t), []);
 
-// Stable callback passed to useMicrophone (never changes)
-const stableOnTranscript = useCallback((text) => onTranscriptRef.current?.(text), []);
-
-// Update ref every render (not expensive)
+// handleTranscript re-assigned every render via ref
 onTranscriptRef.current = handleTranscript;
 ```
 
-**Why:** useMicrophone detects callback identity changes and reinits SpeechRecognition if it changes. Refs let us call fresh handleTranscript without callback identity changing.
+**Why:** `useMicrophone` reinitializes SpeechRecognition if the callback identity changes. Refs let `handleTranscript` access fresh state without changing the callback reference.
 
-### Intent Detection → UI Popup Pattern
+### File Structure
 
-`useEffectIntent.detectIntent(message)` returns effect info if keywords match. Don't wait for user — show in confirm box immediately:
+```
+App.js                       ← root: auth gate, header, PaywallModal
+api.js                       ← all backend calls + authHeaders (Bearer token)
+app.json                     ← extra.apiKey, extra.backendUrl
+shared/theme.js              ← C color palette + IS_WEB
+shared/supabase.js           ← getSession, onAuthStateChange, signOut, DEV_MODE
+shared/constants.js          ← SUB_LANGS, PLAT_LABELS, detectSubtitleLang, isStartCommand, mergeCommand
 
-1. `detectIntent()` runs in `sendMsg()`
-2. Sets `detectedEffect` state
-3. `ChatFooter` renders effect card in confirm box
-4. User can click "Uygula" or say "uygula" to apply
+screens/
+  WorkspaceScreen.js         ← single-page workspace (entire app logic)
+  AuthScreen.js              ← email/password + GitHub OAuth (Supabase)
 
-**Files:**
-- `hooks/useEffectIntent.js` (keyword matcher + intensity calc)
-- `components/EffectPicker.js` (manual effect selector modal)
+components/
+  FloatingChat.js            ← floating chat modal (messages, mic, confirm box, progress)
+  VideoMergeModal.js         ← video merge/trim/reorder bottom sheet modal
+  NativeVideoPlayer.js       ← expo-video wrapper
+  TemplateSelector.js        ← (template UI)
+  StepQuickEdit.js           ← quick edit step UI
+  StepProcessing.js          ← processing overlay
+  PaywallModal.js            ← pro upgrade modal
+  ProBadge.js                ← plan badge in header
 
-### Polling with Overlap Protection
-
-`useEditPolling` starts polling `/api/auto-edit/{jobId}/status`. Prevent overlapping requests:
-
-```javascript
-const pollActiveRef = useRef(false);
-if (pollActiveRef.current) return; // skip, previous request still in flight
-pollActiveRef.current = true;
-try {
-  // fetch status
-} finally {
-  pollActiveRef.current = false;
-}
+hooks/
+  useMicrophone.js           ← Web SpeechRecognition / Native expo-speech-recognition + Whisper STT
+  useTTS.js                  ← Web speechSynthesis / Native expo-speech
+  useEditPolling.js          ← polls /auto-edit/{jobId}/status every 4s; handles subtitle auto-apply
+  usePlan.js                 ← AsyncStorage-backed upload counter + pro flag
+  useEffectIntent.js         ← keyword → effect category matcher
 ```
 
-### Chat Command Accumulation
-
-User may describe edit in multiple turns. `StepChat` accumulates via `pendingCommandRef`:
+### API Authentication
 
 ```javascript
-if (!isStartCommand(msg)) {
-  pendingCommandRef.current = mergeCommand(pendingCommandRef.current, msg);
-}
-// Then send to backend as full command string
+// api.js — key resolution order:
+const API_KEY =
+  Constants?.expoConfig?.extra?.apiKey  // app.json extra.apiKey (primary)
+  || process.env.EXPO_PUBLIC_API_KEY    // .env fallback
+  || (__DEV__ && '<dev-key>');          // hardcoded dev fallback
+
+// Added to every request:
+headers: { Authorization: `Bearer ${API_KEY}` }
 ```
 
-Backend `/api/chat` also merges user history into final `command_text` (last 5 msgs).
+Backend `services/security.py`: if `API_SECRET_KEY` env var is unset → dev mode (no auth). If set, all `/api/*` routes require the Bearer token (except `/health`, `/api/demo/verify`).
 
----
+### Backend API
 
-## New Features & Files (Recent Additions)
+| Endpoint | Function in api.js |
+|---|---|
+| `POST /api/video/upload` | `uploadVideoWithProgress(file, onProgress)` |
+| `POST /api/chat` | `sendChatMessage({ jobId, message, history })` |
+| `POST /api/chat/stream` | `sendChatMessageStream({ ..., onChunk, onDone })` — SSE |
+| `GET  /api/auto-edit/:id/status` | `getAutoEditStatus(jobId)` |
+| `POST /api/auto-edit/:id` | `autoEdit(jobId, params)` |
+| `POST /api/effects/:id` | `applyEffect(jobId, category, intensity)` |
+| `POST /api/shorts/:id` | `generateShorts(jobId, opts)` |
+| `POST /api/subtitles/:id` | `generateSubtitles(jobId, { language, style, ... })` |
+| `POST /api/stt/transcribe` | `transcribeAudio(blob, filename, lang)` |
+| `POST /api/merge` | `mergeVideos(jobIds, opts)` |
+| `POST /api/trim-merge` | `trimMerge(clips, opts)` |
+| `POST /api/beat-sync/:id` | `beatSync(jobId, opts)` |
+| `POST /api/bg-remove/:id` | `removeBackground(jobId, opts)` |
+| `POST /api/enhance-audio/:id` | `enhanceAudio(jobId, opts)` |
+| `POST /api/music/:id` | `addMusic(jobId, opts)` |
+| `POST /api/sfx/:id` | `addSoundEffect(jobId, opts)` |
+| `POST /api/undo/:id` | `undoEdit(jobId)` |
 
-### Effects System
-- **Files:** `components/EffectPicker.js`, `hooks/useEffectIntent.js`, backend `/api/effects/{jobId}`
-- **Flow:** Detect intent → show in confirm box → user confirms (button or voice "uygula") → POST to `/api/effects/{jobId}` → new video URL returned → App.js updates result state → StepPreview shows new video
-- **Categories:** impact_shock, comedy_reaction, tension_build, crowd_laugh, impact_emphasis, fail_tone, epic_moment
+### Platform Differences
 
-### Subtitle Auto-Application
-- **Location:** `useEditPolling.js` line 127 — now applies ALL languages (was skipping Turkish)
-- **Flow:** `detectSubtitleLang()` in chat or AI reply → stored in `pendingSubLangRef` → passed to `/api/subtitles/{jobId}` after edit completes → new video URL returned
+`IS_WEB = Platform.OS === 'web'` gates all platform-specific behavior:
+- **Web**: `<input type="file" multiple>` for picking, `SpeechRecognition` for voice, `SpeechSynthesis` for TTS
+- **Native**: `expo-document-picker` with `allowsMultipleSelection: true`, `expo-speech-recognition` → Whisper fallback, `expo-speech` for TTS
 
-### Voice Confirmation (Auto-Edit)
-- **Flow:** Edit plan ready → TTS says reply + "Onaylamak için 'evet' de." → user says "evet" → `handleTranscript` intercepts "evet" → calls `startEdit()` without manual click
+### Pro/Plan System
 
-### Shorts Generation with Voice Command
-- **Location:** `StepChat` tab switching + `doGenerateShorts()`
-- **Voice trigger:** User says "shorts" or "kısa klip" → `handleTranscript` routes to `isShortsCmd()` → switches tab + calls generation
+- **Files:** `hooks/usePlan.js`, `components/PaywallModal.js`, `components/ProBadge.js`
+- **Tracking:** AsyncStorage daily upload counter
+- **Gated:** effects, shorts, subtitles, unlimited uploads
+- **State:** local-only (`usePlan.upgrade()` just sets local state) — backend doesn't validate yet
 
----
+### Edit Flow
 
-## Known Bugs & Fixes
+1. Upload → backend returns `job_id` → `jobData` set, `wsState = 'ready'`
+2. Chat turns hit `/api/chat`. When `ready_to_edit: true` + `edit_params` returned → `confirmData` set → confirm card shown in FloatingChat
+3. Voice "evet" or button → `handleConfirm()` → `startEdit()` → `wsState = 'processing'`
+4. `useEditPolling` polls every 4s. If subtitle language detected in chat → auto-applies `/api/subtitles` after edit
+5. `onDone` callback → `result` set → `wsState = 'done'` → NativeVideoPlayer shows output
+6. Download via `handleDownload()` (web: `<a>` download, native: `expo-sharing`)
 
-### useMicrophone.js — FIXED
-- **Bug 1 (line 26):** `getSRModule()` recursively called itself instead of importing → infinite loop, on-device STT never worked
-  - **Fix:** Changed to `_srModule = await import('expo-speech-recognition')`
-- **Bug 2 (line 166):** Missing `await` on `getSRModule()` call → Promise returned, not module → `undefined` errors
-  - **Fix:** Added `const mod = await getSRModule()`
+### Development Tips
 
-### useEditPolling.js — INCOMPLETE (may need fix)
-- Line 66: `stopPolling()` called at start to clean up previous interval (good)
-- But if early return on line 77 (sync result), polling ref is null → should be safe
+**Adding a voice command:**
+1. Add matcher function (e.g. `isMyCmd(t)`) near top of `WorkspaceScreen.js`
+2. Add case in `handleTranscript()` before the `sendMsg()` fallthrough
+3. Optionally add chip to `VOICE_CMDS` array in `VoiceCommandPanel`
 
-### Platform/Duration Extraction
-- **Pattern:** Backend `/api/chat` now extracts platform + duration from entire message history
-- **Keywords:** "tiktok", "instagram", "youtube", "shorts", "kısa", "dakika", "saniye", etc.
-- **Fallback:** youtube_shorts + None (if not detected)
+**Adding an effect:**
+1. Add category to `EFFECT_CATEGORIES` in `hooks/useEffectIntent.js`
+2. Add FFmpeg filter to `EFFECT_FILTERS` in backend `main.py`
 
----
+**Switching backend environment:**
+Change `BASE_URL` in `api.js` — `Platform.OS === 'web' ? 'http://127.0.0.1:8000' : 'http://192.168.1.6:8000'`
 
-## Development Tips
+### Backend Structure
 
-### When adding voice commands:
-1. Add keyword regex to `StepChat.js` (e.g., `isMyCmd()`)
-2. Add case in `handleTranscript()` before `sendMsg()` fallthrough
-3. Remember: voice callback runs in `onTranscriptRef.current`, so it won't see stale closures
+```
+main.py              ← FastAPI app, auth middleware, major endpoints
+services/
+  security.py        ← Bearer token auth, job ownership, file validation
+api/
+  video.py           ← upload handler
+  auto_edit.py       ← edit router
+  merge.py           ← /merge and /trim-merge (xfade transitions, resolution scaling)
+  shorts.py          ← semantic short-clip generation
+  subtitles.py       ← subtitle burn-in with CAPTION_STYLE_PRESETS
+  effects.py         ← FFmpeg-based visual effects
+  beat_sync.py       ← librosa beat detection + FFmpeg pulse effect
+  bg_remove.py       ← rembg AI / chromakey background removal
+  audio_enhance.py   ← FFmpeg afftdn + loudnorm profiles
+  music_bg.py        ← background music
+  sfx.py             ← sound effects
+```
 
-### When adding effects:
-1. Add category to `EFFECT_CATEGORIES` in `useEffectIntent.js`
-2. Add FFmpeg filter to backend `EFFECT_FILTERS` in `main.py`
-3. Effect auto-application via `onEffectApplied` callback (App.js merges into result state)
-
-### Backend dev:
-- Subtitle endpoint: `/api/subtitles/{job_id}` calls `generateSubtitles()`
-- Always rebuild if modifying Whisper or Claude calls (they're lazy-loaded)
-- `LAST_JOB_ID` tracks last upload for demo mode
+**Required pip installs for full feature set:**
+```bash
+venv/Scripts/pip.exe install librosa soundfile rembg Pillow
+```
