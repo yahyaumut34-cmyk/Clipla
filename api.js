@@ -1,26 +1,16 @@
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 
-const BASE_WEB = 'http://127.0.0.1:8000';
-const DEFAULT_MOBILE = 'http://192.168.1.6:8000';
-const ANDROID_EMULATOR = 'http://10.0.2.2:8000';
-const IOS_SIMULATOR = 'http://127.0.0.1:8000';
+const RAILWAY_URL = 'https://clipla-backend-production.up.railway.app';
 
 const configBackendUrl =
   Constants?.expoConfig?.extra?.backendUrl ||
   Constants?.manifest?.extra?.backendUrl ||
   process.env.EXPO_PUBLIC_BACKEND_URL ||
   process.env.BACKEND_URL ||
-  process.env.REACT_NATIVE_BACKEND_URL ||
-  process.env.BACKEND_URL;
+  process.env.REACT_NATIVE_BACKEND_URL;
 
-const DEFAULT_NATIVE = Platform.OS === 'android'
-  ? (Constants.isDevice === false ? ANDROID_EMULATOR : DEFAULT_MOBILE)
-  : (Constants.isDevice === false ? IOS_SIMULATOR : DEFAULT_MOBILE);
-
-export const BASE_URL = Platform.OS === 'web'
-  ? BASE_WEB
-  : configBackendUrl || DEFAULT_NATIVE;
+export const BASE_URL = configBackendUrl || RAILWAY_URL;
 export const WARN_BYTES = 300 * 1024 * 1024;
 const MAX_BYTES = 800 * 1024 * 1024;
 

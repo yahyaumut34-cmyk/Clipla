@@ -73,7 +73,7 @@
         "projectId": "f4ed3165-7a2d-48c4-b968-29c42f0a1e3b"
       },
       "apiKey": "1p8LO_BwlNTZW_o1ZVvXRWBu_gv_HON0O6yVDekJIK4",
-      "backendUrl": "http://127.0.0.1:8000"
+      "backendUrl": "https://clipla-backend-production.up.railway.app"
     }
   }
 }
