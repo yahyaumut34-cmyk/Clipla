@@ -27,6 +27,7 @@ import {
   changeSpeed, applyEffect, applyFilter, removeBackground,
   addTextOverlay, sendChatMessage, analyzeVideo,
 } from '../api';
+import { detectTransitionCmd, TRANSITION_TYPES } from '../shared/constants';
 import { ChatMessages } from '../components/FloatingChat';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Sharing from 'expo-sharing';
@@ -518,6 +519,7 @@ export function WorkspaceScreen({ session, planCtx, onPaywall }) {
   const [videoList, setVideoList]           = useState([]);
   const [mergeUploading, setMergeUploading] = useState(false);
   const [mergeSettings, setMergeSettings]   = useState({ transition: 'cut', clips: {} });
+  const [editTransition, setEditTransition] = useState(null); // geçiş tipi: fade, slideleft vb.
   const [mergeModalVisible, setMergeModalVisible] = useState(false);
   const [showActions, setShowActions]             = useState(false);
   const [messages, setMessages]                   = useState([]);
@@ -570,11 +572,13 @@ export function WorkspaceScreen({ session, planCtx, onPaywall }) {
     if (!confirmData || !jobData?.jobId) return;
     const params = { ...confirmData };
     setConfirmData(null);
-    addMsg('assistant', 'Harika! Edit başlıyor, az bekle kanka 🚀');
+    const transMsg = editTransition ? ` (${TRANSITION_TYPES[editTransition]?.label || editTransition} geçişiyle)` : '';
+    addMsg('assistant', `Harika! Edit başlıyor${transMsg}, az bekle kanka 🚀`);
     startEdit({
       commandText:       params.command_text || '',
       platform:          params.platform || 'youtube',
       targetDurationSec: params.target_duration_sec || null,
+      transition:        editTransition,
     });
   }
 
@@ -787,6 +791,18 @@ export function WorkspaceScreen({ session, planCtx, onPaywall }) {
       if (isRejectWord(t) && confirmData)  { handleReject();  return; }
 
       if (isUndoCmd(t)) { handleApply('undo', {}); return; }
+
+      // Geçiş komutu
+      if (/geçiş|transition|fade|slide|wipe|dissolve|daire|piksel/i.test(t)) {
+        const detected = detectTransitionCmd(t);
+        if (detected) {
+          setEditTransition(detected);
+          const info = TRANSITION_TYPES[detected];
+          addMsg('assistant', `${info?.emoji || '🎬'} ${info?.label || detected} geçişi seçildi! Onaylayınca uygulanacak.`);
+          speak(`${info?.label || detected} geçişi seçildi`);
+          return;
+        }
+      }
 
       // Video birleştirme modal
       if (/video.*birleştir|birleştir|merge/i.test(t)) {

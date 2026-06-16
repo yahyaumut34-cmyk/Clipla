@@ -62,12 +62,14 @@ export function useEditPolling({ jobId, onDone, onError }) {
   }
 
   const startEdit = useCallback(async ({
-    commandText       = '',
-    platform          = 'youtube',
-    targetDurationSec = null,
-    subtitleLang      = null,
-    removeFillers     = false,
-    preserveRhythm    = true,
+    commandText          = '',
+    platform             = 'youtube',
+    targetDurationSec    = null,
+    subtitleLang         = null,
+    removeFillers        = false,
+    preserveRhythm       = true,
+    transition           = null,
+    transitionDuration   = 0.3,
   } = {}) => {
     stopPolling(); // önceki interval varsa temizle (çift çağrı koruması)
     setEditLoading(true);
@@ -78,7 +80,7 @@ export function useEditPolling({ jobId, onDone, onError }) {
 
     try {
       // Edit isteğini gönder
-      const initialData = await autoEdit(jobId, { commandText, platform, targetDurationSec, removeFillers, preserveRhythm });
+      const initialData = await autoEdit(jobId, { commandText, platform, targetDurationSec, removeFillers, preserveRhythm, transition, transitionDuration });
 
       // Backend senkron yanıt verdiyse (küçük videolar) doğrudan tamamla
       if (initialData?.status === 'done' || initialData?.status === 'completed' || initialData?.download_url || initialData?.output_url) {

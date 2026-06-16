@@ -87,21 +87,25 @@ export async function sendChatMessage({ message, history = [], jobId, language =
 }
 
 export async function autoEdit(jobId, {
-  commandText       = '',
-  platform          = 'youtube',
-  targetDurationSec = null,
-  removeFillers     = false,
-  preserveRhythm    = true,
+  commandText          = '',
+  platform             = 'youtube',
+  targetDurationSec    = null,
+  removeFillers        = false,
+  preserveRhythm       = true,
+  transition           = null,
+  transitionDuration   = 0.3,
 } = {}) {
   const res = await fetch(`${BASE_URL}/api/auto-edit/${jobId}`, {
     method: 'POST',
     headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({
-      command_text:        commandText,
+      command_text:         commandText,
       platform,
-      target_duration_sec: targetDurationSec,
-      remove_fillers:      removeFillers,
-      preserve_rhythm:     preserveRhythm,
+      target_duration_sec:  targetDurationSec,
+      remove_fillers:       removeFillers,
+      preserve_rhythm:      preserveRhythm,
+      transition:           transition || undefined,
+      transition_duration:  transitionDuration,
     }),
   });
   const data = await res.json();

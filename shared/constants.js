@@ -65,6 +65,38 @@ export function mergeCommand(prev, next) {
   return `${a}, ${b}`;
 }
 
+export const TRANSITION_TYPES = {
+  fade:        { label: 'Fade',        emoji: '🌫️' },
+  fadeblack:   { label: 'Siyaha Fade', emoji: '⬛' },
+  fadewhite:   { label: 'Beyaza Fade', emoji: '⬜' },
+  dissolve:    { label: 'Çözülme',     emoji: '✨' },
+  slideleft:   { label: 'Sola Kayma',  emoji: '◀️' },
+  slideright:  { label: 'Sağa Kayma',  emoji: '▶️' },
+  slideup:     { label: 'Yukarı',      emoji: '🔼' },
+  slidedown:   { label: 'Aşağı',       emoji: '🔽' },
+  wipeleft:    { label: 'Sol Silme',   emoji: '◁' },
+  wiperight:   { label: 'Sağ Silme',  emoji: '▷' },
+  circleopen:  { label: 'Daire Aç',   emoji: '⭕' },
+  pixelize:    { label: 'Piksel',      emoji: '🟦' },
+};
+
+export function detectTransitionCmd(text) {
+  const t = (text || '').toLowerCase();
+  if (/siyah.*fade|fade.*siyah|karara.*geçiş/i.test(t))    return 'fadeblack';
+  if (/beyaz.*fade|fade.*beyaz|beyaza.*geçiş/i.test(t))    return 'fadewhite';
+  if (/çözül|dissolve/i.test(t))                            return 'dissolve';
+  if (/sola.*kay|kaya.*sol|slide.*left/i.test(t))           return 'slideleft';
+  if (/sağa.*kay|kaya.*sağ|slide.*right/i.test(t))          return 'slideright';
+  if (/yukarı.*kay|slide.*up/i.test(t))                     return 'slideup';
+  if (/aşağı.*kay|slide.*down/i.test(t))                    return 'slidedown';
+  if (/sol.*sil|wipe.*left/i.test(t))                       return 'wipeleft';
+  if (/sağ.*sil|wipe.*right/i.test(t))                      return 'wiperight';
+  if (/daire|circle/i.test(t))                              return 'circleopen';
+  if (/piksel|pixel/i.test(t))                              return 'pixelize';
+  if (/fade|geçiş ekle|geçiş koy/i.test(t))                return 'fade';
+  return null;
+}
+
 export function detectSubtitleLang(text) {
   const t = (text || '').toLowerCase();
   if (t.includes('alman')    || t.includes('deutsch')    || t.includes('german'))    return 'de';
