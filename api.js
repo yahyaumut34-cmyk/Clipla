@@ -17,8 +17,7 @@ const MAX_BYTES = 800 * 1024 * 1024;
 const API_KEY =
   Constants?.expoConfig?.extra?.apiKey ||
   Constants?.manifest?.extra?.apiKey ||
-  process.env.EXPO_PUBLIC_API_KEY ||
-  '1p8LO_BwlNTZW_o1ZVvXRWBu_gv_HON0O6yVDekJIK4';
+  process.env.EXPO_PUBLIC_API_KEY;
 
 /** Tüm API isteklerine eklenen ortak header'lar */
 function authHeaders(extra = {}) {

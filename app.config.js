@@ -1,6 +1,7 @@
 const appJson = require('./app.json');
 
-const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL || process.env.BACKEND_URL || appJson.expo.extra?.backendUrl || 'http://192.168.1.6:8000';
+const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL || appJson.expo.extra?.backendUrl || 'https://clipla-backend-production.up.railway.app';
+const apiKey    = process.env.EXPO_PUBLIC_API_KEY;
 
 module.exports = ({ config }) => ({
   ...appJson,
@@ -9,6 +10,7 @@ module.exports = ({ config }) => ({
     extra: {
       ...appJson.expo.extra,
       backendUrl,
+      apiKey,
     },
     android: {
       ...appJson.expo.android,
